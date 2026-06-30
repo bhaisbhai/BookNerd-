@@ -375,6 +375,8 @@ export default function App() {
       console.error("Google login error:", err);
       if (err.code === "auth/popup-blocked") {
         alert("The Google login popup was blocked by your browser. Please permit popups and redirect cookies to sign in successfully.");
+      } else if (err.code === "auth/unauthorized-domain") {
+        alert(`Google Login failed: ${window.location.hostname} is not listed as an authorized Firebase Authentication domain.`);
       } else {
         alert(`Google Login failed: ${err.message}`);
       }
