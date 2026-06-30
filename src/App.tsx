@@ -996,51 +996,56 @@ export default function App() {
   const upcomingSeriesCount = seriesList.filter(s => s.upcomingBook).length;
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] text-[#1A1A1A] selection:bg-[#EBE9E4] pb-24 font-sans">
+    <div className="min-h-screen bg-[#FFFDF3] text-[#1A1A1A] selection:bg-[#FFE8CC] pb-24 font-sans">
       
-      {/* Top Editorial Header */}
-      <header className="border-b border-[#1A1A1A] px-6 py-6 md:px-10 flex flex-col md:flex-row justify-between items-baseline gap-4 max-w-7xl mx-auto">
-        <div className="flex items-baseline gap-3">
-          <h1 
-            onClick={() => setActiveTab("dashboard")}
-            className="text-5xl font-serif italic font-light tracking-tighter cursor-pointer hover:opacity-85 transition-opacity"
-          >
-            Biblios.
-          </h1>
-          <span className="text-[10px] font-mono tracking-widest uppercase opacity-40 hidden sm:inline">The Chronicles Register</span>
+      {/* Top Playful Header */}
+      <header className="border-b-2 border-[#1A1A1A]/10 px-6 py-6 md:px-10 flex flex-col md:flex-row justify-between items-center gap-6 max-w-7xl mx-auto">
+        <div className="flex items-center gap-3 select-none">
+          <div className="bg-[#FF6B4A] text-white w-12 h-12 rounded-2xl flex items-center justify-center font-display text-2xl font-bold shadow-[3px_3px_0px_0px_#1A1A1A] border-2 border-[#1A1A1A] rotate-[-4deg]">
+            🤓
+          </div>
+          <div className="flex flex-col">
+            <h1 
+              onClick={() => setActiveTab("dashboard")}
+              className="text-4xl font-display font-extrabold tracking-tight cursor-pointer hover:scale-105 transition-transform text-[#1A1A1A]"
+            >
+              Book <span className="text-[#FF6B4A]">Nerd</span>
+            </h1>
+            <span className="text-[10px] font-playful font-bold tracking-wider text-[#F2A359] uppercase block">your cute series tracker</span>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-between md:justify-end gap-6 w-full md:w-auto mt-4 md:mt-0">
-          <nav className="flex space-x-6 text-xs uppercase tracking-[0.2em] font-semibold">
+          <nav className="flex space-x-3 text-xs font-playful font-bold">
             <button
               onClick={() => setActiveTab("dashboard")}
-              className={`cursor-pointer transition-all pb-1 ${
+              className={`cursor-pointer transition-all px-4 py-2 rounded-full border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A] ${
                 activeTab === "dashboard" 
-                  ? "underline underline-offset-4 decoration-1 decoration-[#1A1A1A]" 
-                  : "opacity-40 hover:opacity-100"
+                  ? "bg-[#FF6B4A] text-white" 
+                  : "bg-white text-[#1A1A1A] hover:bg-[#FFE8CC]"
               }`}
             >
-              Collection
+              📚 My Shelf
             </button>
             <button
               onClick={() => setActiveTab("search")}
-              className={`cursor-pointer transition-all pb-1 ${
+              className={`cursor-pointer transition-all px-4 py-2 rounded-full border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A] ${
                 activeTab === "search" 
-                  ? "underline underline-offset-4 decoration-1 decoration-[#1A1A1A]" 
-                  : "opacity-40 hover:opacity-100"
+                  ? "bg-[#F2A359] text-white" 
+                  : "bg-white text-[#1A1A1A] hover:bg-[#FFE8CC]"
               }`}
             >
-              Discover
+              🔍 Discover
             </button>
             <button
               onClick={() => setActiveTab("releases")}
-              className={`cursor-pointer transition-all pb-1 ${
+              className={`cursor-pointer transition-all px-4 py-2 rounded-full border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A] ${
                 activeTab === "releases" 
-                  ? "underline underline-offset-4 decoration-1 decoration-[#1A1A1A]" 
-                  : "opacity-40 hover:opacity-100"
+                  ? "bg-[#4FB06D] text-white" 
+                  : "bg-white text-[#1A1A1A] hover:bg-[#FFE8CC]"
               }`}
             >
-              Calendar ({upcomingSeriesCount})
+              📅 Calendar ({upcomingSeriesCount})
             </button>
           </nav>
 
@@ -1050,9 +1055,9 @@ export default function App() {
               onClick={handleScanForNews}
               disabled={isScanningNews || seriesList.length === 0}
               title="Query publisher lists and live news for updates"
-              className="px-3.5 py-1.5 border border-[#1A1A1A] text-[10px] font-mono tracking-widest uppercase hover:bg-[#1A1A1A] hover:text-white transition-all duration-200 flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+              className="px-4 py-2 border-2 border-[#1A1A1A] bg-[#4F46E5] text-white text-[11px] font-playful font-bold tracking-wider rounded-xl shadow-[2px_2px_0px_0px_#1A1A1A] hover:translate-y-[-1px] active:translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
             >
-              <RefreshCw className={`w-3 h-3 ${isScanningNews ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${isScanningNews ? "animate-spin" : ""}`} />
               Scan Live News
             </button>
 
@@ -1060,11 +1065,11 @@ export default function App() {
             <div className="relative">
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="p-2 border border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white rounded-full transition-colors relative cursor-pointer"
+                className="p-2.5 border-2 border-[#1A1A1A] bg-white text-[#1A1A1A] hover:bg-[#FFE8CC] rounded-full shadow-[2px_2px_0px_0px_#1A1A1A] transition-all relative cursor-pointer block"
               >
                 <Bell className="w-4 h-4" />
                 {notifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4.5 h-4.5 bg-[#C45B31] text-white text-[9px] font-mono font-bold flex items-center justify-center rounded-full">
+                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#FF6B4A] text-white text-[10px] font-playful font-bold flex items-center justify-center rounded-full border-2 border-[#1A1A1A]">
                     {notifications.length}
                   </span>
                 )}
@@ -1076,58 +1081,58 @@ export default function App() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="absolute right-0 mt-3 w-80 sm:w-96 bg-[#FAF9F6] border border-[#1A1A1A] shadow-xl overflow-hidden z-50"
+                    className="absolute right-0 mt-3 w-80 sm:w-96 bg-[#FFFDF3] border-2 border-[#1A1A1A] shadow-[4px_4px_0px_0px_#1A1A1A] rounded-2xl overflow-hidden z-50"
                   >
-                    <div className="p-4 bg-[#EBE9E4] border-b border-[#1A1A1A] flex justify-between items-center">
-                      <span className="font-serif font-bold text-xs uppercase tracking-widest text-[#1A1A1A]">Subscribed Despatches</span>
+                    <div className="p-4 bg-[#FFE8CC] border-b-2 border-[#1A1A1A] flex justify-between items-center">
+                      <span className="font-playful font-extrabold text-xs uppercase tracking-wider text-[#1A1A1A] flex items-center gap-1">📣 Bookworm Despatches</span>
                       <button 
                         onClick={() => setShowNotifications(false)}
                         className="text-[#1A1A1A]/60 hover:text-[#1A1A1A] cursor-pointer"
                       >
-                        <X className="w-3.5 h-3.5" />
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
 
-                    <div className="max-h-96 overflow-y-auto divide-y divide-[#1A1A1A]/10">
+                    <div className="max-h-96 overflow-y-auto divide-y-2 divide-[#1A1A1A]/10">
                       {notifications.length === 0 ? (
-                        <div className="p-8 text-center text-xs text-[#1A1A1A]/50 italic font-serif">
+                        <div className="p-8 text-center text-xs text-[#1A1A1A]/50 italic font-playful">
                           No active updates. Subscribed titles appear here.
                         </div>
                       ) : (
                         notifications.map(notif => {
                           const daysLeft = getDaysUntilRelease(notif.releaseDate);
                           return (
-                            <div key={notif.id} className="p-4 hover:bg-[#EBE9E4]/40 transition-colors relative group">
+                            <div key={notif.id} className="p-4 hover:bg-[#FFE8CC]/40 transition-colors relative group">
                               <button 
                                 onClick={() => handleDismissNotification(notif.id)}
-                                className="absolute top-4 right-4 text-[#1A1A1A]/40 hover:text-[#C45B31] opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                className="absolute top-4 right-4 text-[#1A1A1A]/40 hover:text-[#FF6B4A] opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                                 title="Dismiss update"
                               >
                                 <X className="w-3.5 h-3.5" />
                               </button>
                               
                               <div className="flex items-start gap-2.5">
-                                <span className="p-1 rounded bg-[#EBE9E4] text-[#1A1A1A] mt-0.5">
+                                <span className="p-1.5 rounded-lg bg-white border border-[#1A1A1A]/10 text-[#FF6B4A] mt-0.5 shadow-[1px_1px_0px_0px_#1A1A1A]">
                                   {notif.type === "new_announcement" ? (
-                                    <Newspaper className="w-3 h-3" />
+                                    <Newspaper className="w-3.5 h-3.5" />
                                   ) : (
-                                    <Clock className="w-3 h-3" />
+                                    <Clock className="w-3.5 h-3.5" />
                                   )}
                                 </span>
                                 <div className="flex-1 pr-4">
-                                  <span className="text-[9px] font-mono uppercase tracking-wider text-[#1A1A1A]/50 block mb-0.5">
+                                  <span className="text-[10px] font-playful font-bold uppercase tracking-wider text-[#F2A359] block mb-0.5">
                                     {notif.seriesTitle}
                                   </span>
-                                  <p className="text-xs font-serif leading-relaxed text-[#1A1A1A]">
+                                  <p className="text-xs font-sans font-medium leading-relaxed text-[#1A1A1A]">
                                     {notif.message}
                                   </p>
                                   <div className="flex items-center gap-3 mt-2">
-                                    <span className="text-[9px] font-mono bg-[#EBE9E4] text-[#1A1A1A] px-1.5 py-0.5 border border-[#1A1A1A]/10">
+                                    <span className="text-[10px] font-mono bg-white text-[#1A1A1A] px-2 py-0.5 border-2 border-[#1A1A1A] rounded-md shadow-[1px_1px_0px_0px_#1A1A1A] font-bold">
                                       Launch: {notif.releaseDate}
                                     </span>
                                     {daysLeft !== null && daysLeft > 0 && (
-                                      <span className="text-[9px] font-mono text-[#C45B31] font-bold">
-                                        T-minus {daysLeft} Days
+                                      <span className="text-[10px] font-playful font-bold text-[#FF6B4A] animate-pulse">
+                                        T-minus {daysLeft} Days ⏰
                                       </span>
                                     )}
                                   </div>
@@ -1223,15 +1228,15 @@ export default function App() {
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
           
-          {/* Left Editorial Sidebar: Active Progress */}
-          <aside className="lg:col-span-4 border border-[#1A1A1A] p-6 bg-[#FAF9F6] flex flex-col space-y-8">
+          {/* Left Playful Sidebar: Active Progress */}
+          <aside className="lg:col-span-4 border-2 border-[#1A1A1A] p-6 bg-white rounded-3xl shadow-[4px_4px_0px_0px_#1A1A1A] flex flex-col space-y-8">
             <div>
-              <span className="text-[10px] uppercase tracking-widest opacity-50 mb-3 block font-mono">Current Engagement</span>
-              <h2 className="text-3xl font-serif font-light leading-tight mb-6">Series in<br/>Progress</h2>
+              <span className="text-[10px] uppercase tracking-widest text-[#F2A359] font-playful font-bold mb-3 block">📖 NERDY PROGRESS</span>
+              <h2 className="text-3xl font-display font-extrabold leading-tight text-[#1A1A1A] mb-6">Currently<br/>Reading 🐛</h2>
               
-              <div className="space-y-8">
+              <div className="space-y-6">
                 {seriesList.length === 0 ? (
-                  <p className="text-xs font-serif italic opacity-50">No series tracked yet. Use Search to build your catalog library.</p>
+                  <p className="text-xs font-playful text-[#1A1A1A]/60 italic">No series tracked yet. Use Discover or Search to start your shelf!</p>
                 ) : (
                   seriesList.filter(s => s.status === "reading").slice(0, 4).map(series => {
                     const nextBook = series.books.find(b => !b.isRead);
@@ -1240,24 +1245,24 @@ export default function App() {
                     return (
                       <div 
                         key={series.id} 
-                        className="group cursor-pointer" 
+                        className="group cursor-pointer p-4 rounded-2xl border-2 border-[#1A1A1A]/10 hover:border-[#1A1A1A] hover:bg-[#FFFDF3] transition-all hover:shadow-[2px_2px_0px_0px_#1A1A1A]" 
                         onClick={() => { 
                           setActiveTab("dashboard"); 
                           setExpandedIds(p => ({ ...p, [series.id]: true })); 
                         }}
                       >
-                        <div className="flex justify-between items-end mb-1.5">
-                          <h3 className="text-sm font-serif font-semibold text-[#1A1A1A] group-hover:underline">{series.title}</h3>
-                          <span className="text-[9px] font-mono opacity-60">{String(readCount).padStart(2, '0')} / {String(series.books.length).padStart(2, '0')}</span>
+                        <div className="flex justify-between items-end mb-2">
+                          <h3 className="text-sm font-playful font-bold text-[#1A1A1A] group-hover:text-[#FF6B4A]">{series.title}</h3>
+                          <span className="text-[10px] font-mono font-bold text-[#F2A359]">{readCount} / {series.books.length}</span>
                         </div>
-                        <div className="w-full h-[2px] bg-[#1A1A1A]/10 relative">
+                        <div className="w-full h-3 bg-[#EBE9E4] rounded-full overflow-hidden border border-[#1A1A1A]/10 relative">
                           <div 
-                            className="absolute top-0 left-0 h-full bg-[#1A1A1A] transition-all duration-300" 
+                            className="absolute top-0 left-0 h-full bg-[#4FB06D] rounded-full transition-all duration-300" 
                             style={{ width: `${percent}%` }}
                           ></div>
                         </div>
                         {nextBook && (
-                          <p className="text-[10px] mt-1.5 opacity-60 italic font-serif">Next Up: {nextBook.title}</p>
+                          <p className="text-[10px] mt-2 text-[#1A1A1A]/60 font-playful">Next book: <span className="font-bold text-[#1A1A1A]">{nextBook.title}</span></p>
                         )}
                       </div>
                     );
@@ -1265,18 +1270,18 @@ export default function App() {
                 )}
 
                 {seriesList.filter(s => s.status === "reading").length === 0 && seriesList.length > 0 && (
-                  <p className="text-xs font-serif italic opacity-60">All tracked series are up-to-date or completed! Time for a new series.</p>
+                  <p className="text-xs font-playful italic text-[#1A1A1A]/60">All tracked series are up-to-date or completed! Time for a new series 📚</p>
                 )}
               </div>
             </div>
 
             {/* General Goal Statistics Card */}
-            <div className="border-t border-[#1A1A1A]/10 pt-6">
-              <div className="flex items-center space-x-4 bg-[#EBE9E4] p-4 border border-[#1A1A1A]/20">
-                <div className="w-9 h-9 bg-[#1A1A1A] flex items-center justify-center text-[#FAF9F6] text-xs font-serif italic">B</div>
+            <div className="border-t-2 border-[#1A1A1A]/10 pt-6">
+              <div className="flex items-center space-x-4 bg-[#FFE8CC] p-4 border-2 border-[#1A1A1A] rounded-2xl shadow-[2px_2px_0px_0px_#1A1A1A]">
+                <div className="w-10 h-10 bg-[#FF6B4A] rounded-xl border border-[#1A1A1A] flex items-center justify-center text-white text-lg font-bold">🤓</div>
                 <div>
-                  <p className="text-[9px] uppercase tracking-wider opacity-60 font-mono">Biblios Total Score</p>
-                  <p className="text-xs font-semibold font-serif">{readBooks} of {totalBooks} Volumes Read</p>
+                  <p className="text-[9px] uppercase tracking-wider text-[#1A1A1A]/50 font-playful font-bold">Book Nerd Score</p>
+                  <p className="text-xs font-extrabold font-playful text-[#1A1A1A]">{readBooks} of {totalBooks} books eaten! 🐛</p>
                 </div>
               </div>
             </div>
@@ -1344,62 +1349,76 @@ export default function App() {
                   className="space-y-6"
                 >
                   {/* Filter Sub-nav */}
-                  <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1A1A1A]/10 pb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-[#1A1A1A]/10 pb-4">
                     <div className="flex flex-wrap gap-2">
-                      {["all", "reading", "up-to-date", "completed", "paused"].map((filter) => (
-                        <button
-                          key={filter}
-                          onClick={() => setStatusFilter(filter)}
-                          className={`px-3 py-1 text-[10px] font-mono tracking-widest uppercase transition-all cursor-pointer border ${
-                            statusFilter === filter
-                              ? "bg-[#1A1A1A] text-[#FAF9F6] border-[#1A1A1A]"
-                              : "text-[#1A1A1A] hover:bg-[#EBE9E4] border-transparent"
-                          }`}
-                        >
-                          {filter}
-                        </button>
-                      ))}
+                      {["all", "reading", "up-to-date", "completed", "paused"].map((filter) => {
+                        const colors: Record<string, string> = {
+                          all: "hover:bg-[#FFFDF3] bg-white text-[#1A1A1A] border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A]",
+                          reading: "hover:bg-[#FFFDF3] bg-[#FFE8CC] text-[#1A1A1A] border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A]",
+                          "up-to-date": "hover:bg-[#FFFDF3] bg-[#DFF0EA] text-[#1A1A1A] border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A]",
+                          completed: "hover:bg-[#FFFDF3] bg-[#E3E0F3] text-[#1A1A1A] border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A]",
+                          paused: "hover:bg-[#FFFDF3] bg-[#FADCE6] text-[#1A1A1A] border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A]"
+                        };
+                        const activeColors: Record<string, string> = {
+                          all: "bg-[#1A1A1A] text-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A]",
+                          reading: "bg-[#FF6B4A] text-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A]",
+                          "up-to-date": "bg-[#4FB06D] text-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A]",
+                          completed: "bg-[#4F46E5] text-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A]",
+                          paused: "bg-[#EC4899] text-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A]"
+                        };
+                        return (
+                          <button
+                            key={filter}
+                            onClick={() => setStatusFilter(filter as any)}
+                            className={`px-3 py-1.5 rounded-full text-[11px] font-playful font-bold uppercase transition-all cursor-pointer ${
+                              statusFilter === filter ? activeColors[filter] : colors[filter]
+                            }`}
+                          >
+                            {filter}
+                          </button>
+                        );
+                      })}
                     </div>
-                    <span className="text-[10px] tracking-widest uppercase font-mono opacity-50">
-                      Catalog Count: {filteredSeries.length}
+                    <span className="text-[11px] font-playful font-bold text-[#F2A359]">
+                      Shelf Count: {filteredSeries.length} 📚
                     </span>
                   </div>
 
                   {/* Series List / Curated Recommendations (Priority 3) */}
                   {seriesList.length === 0 ? (
                     <div className="space-y-8">
-                      <div className="border border-dashed border-[#1A1A1A] p-12 text-center bg-white">
-                        <BookOpen className="w-10 h-10 mx-auto opacity-35 mb-4 text-[#1A1A1A]" />
-                        <p className="font-serif text-lg">Your curated collection is empty.</p>
-                        <p className="text-xs text-[#1A1A1A]/60 font-serif mt-2 max-w-md mx-auto">
-                          Search for any series (e.g. <b>Dune</b> or <b>A Court of Thorns and Roses</b>) to fetch live release coordinates!
+                      <div className="border-2 border-dashed border-[#1A1A1A] p-12 text-center bg-white rounded-3xl">
+                        <BookOpen className="w-12 h-12 mx-auto text-[#FF6B4A] mb-4 animate-bounce" />
+                        <p className="font-display font-extrabold text-xl text-[#1A1A1A]">Your cute shelf is empty!</p>
+                        <p className="text-xs text-[#1A1A1A]/70 font-playful mt-2 max-w-sm mx-auto leading-relaxed">
+                          Search for any book series (like <b>Dune</b> or <b>A Court of Thorns and Roses</b>) to track chapters and live releases!
                         </p>
                         <button 
                           onClick={() => setActiveTab("search")}
-                          className="mt-6 px-4 py-2 bg-[#1A1A1A] text-white text-[10px] font-mono tracking-widest uppercase hover:bg-black transition-colors cursor-pointer"
+                          className="mt-6 px-5 py-2.5 bg-[#FF6B4A] text-white text-xs font-playful font-bold uppercase rounded-full border-2 border-[#1A1A1A] shadow-[3px_3px_0px_0px_#1A1A1A] hover:translate-y-[-1px] transition-all cursor-pointer"
                         >
-                          Search Book Series
+                          Find a Series 🔍
                         </button>
                       </div>
 
                       <div className="space-y-4">
-                        <div className="flex items-center gap-2 border-b border-[#1A1A1A]/10 pb-2">
-                          <Sparkles className="w-3.5 h-3.5 text-[#C45B31]" />
-                          <h4 className="text-xs font-mono uppercase tracking-widest text-[#1A1A1A] font-bold">Curated Master Recommendations</h4>
+                        <div className="flex items-center gap-2 border-b-2 border-[#1A1A1A]/10 pb-2">
+                          <Sparkles className="w-4 h-4 text-[#FF6B4A]" />
+                          <h4 className="text-xs font-playful uppercase tracking-widest text-[#1A1A1A] font-extrabold">Fun Starter Series</h4>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {RECOMMENDED_SERIES.map(rec => (
-                            <div key={rec.id} className="border border-[#1A1A1A] p-5 bg-white flex flex-col justify-between space-y-4 hover:shadow transition-shadow">
+                            <div key={rec.id} className="border-2 border-[#1A1A1A] p-6 bg-white rounded-3xl flex flex-col justify-between space-y-4 shadow-[4px_4px_0px_0px_#1A1A1A] hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all">
                               <div>
-                                <h5 className="font-serif font-bold text-lg leading-tight text-[#1A1A1A]">{rec.title}</h5>
-                                <span className="text-[10px] font-serif italic text-[#1A1A1A]/60 block mt-0.5">by {rec.author}</span>
-                                <p className="text-xs font-serif text-[#1A1A1A]/70 mt-3 line-clamp-3 leading-relaxed">{rec.description}</p>
+                                <h5 className="font-display font-bold text-lg leading-tight text-[#1A1A1A]">{rec.title}</h5>
+                                <span className="text-xs font-playful font-semibold text-[#F2A359] block mt-0.5">by {rec.author} ✍️</span>
+                                <p className="text-xs font-sans text-[#1A1A1A]/70 mt-3 line-clamp-3 leading-relaxed">{rec.description}</p>
                               </div>
                               <button
                                 onClick={() => handleTrackSeries(rec)}
-                                className="w-full py-1.5 border border-[#1A1A1A] text-[9px] font-mono uppercase tracking-widest hover:bg-[#1A1A1A] hover:text-white transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                                className="w-full py-2 bg-white text-[#1A1A1A] text-xs font-playful font-bold uppercase border-2 border-[#1A1A1A] rounded-xl shadow-[2px_2px_0px_0px_#1A1A1A] hover:bg-[#FFE8CC] transition-all cursor-pointer flex items-center justify-center gap-1.5"
                               >
-                                <Plus className="w-3 h-3" /> Track This Series
+                                <Plus className="w-3.5 h-3.5" /> Track This Series
                               </button>
                             </div>
                           ))}
@@ -1407,18 +1426,18 @@ export default function App() {
                       </div>
                     </div>
                   ) : filteredSeries.length === 0 ? (
-                    <div className="border border-dashed border-[#1A1A1A] p-12 text-center bg-white">
-                      <BookOpen className="w-10 h-10 mx-auto opacity-35 mb-4 text-[#1A1A1A]" />
-                      <p className="font-serif text-lg">No tracked series match this filter.</p>
+                    <div className="border-2 border-dashed border-[#1A1A1A] p-12 text-center bg-white rounded-3xl">
+                      <BookOpen className="w-12 h-12 mx-auto opacity-35 mb-4 text-[#FF6B4A]" />
+                      <p className="font-display font-extrabold text-xl">No book series matches this filter.</p>
                       <button 
                         onClick={() => setStatusFilter("all")}
-                        className="mt-6 px-4 py-2 bg-[#1A1A1A] text-white text-[10px] font-mono tracking-widest uppercase hover:bg-black transition-colors cursor-pointer"
+                        className="mt-6 px-5 py-2 bg-[#FF6B4A] text-white text-xs font-playful font-bold uppercase rounded-full border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A] transition-all cursor-pointer"
                       >
-                        Reset Status Filter
+                        Reset Filter 🔄
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                       {filteredSeries.map((series) => {
                         const readCount = series.books.filter(b => b.isRead).length;
                         const bookPercent = Math.round((readCount / series.books.length) * 100) || 0;
@@ -1428,34 +1447,40 @@ export default function App() {
                         return (
                           <div 
                             key={series.id}
-                            className="border border-[#1A1A1A] bg-white transition-all shadow-sm hover:shadow"
+                            className="border-2 border-[#1A1A1A] bg-white rounded-3xl transition-all shadow-[4px_4px_0px_0px_#1A1A1A] hover:shadow-[6px_6px_0px_0px_#1A1A1A] overflow-hidden"
                           >
                             {/* Card Header Accordion Trigger */}
                             <div 
                               onClick={() => toggleAccordion(series.id)}
-                              className="p-5 md:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-[#FAF9F6] transition-colors select-none"
+                              className="p-6 md:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 cursor-pointer hover:bg-[#FFFDF3]/60 transition-colors select-none"
                             >
-                              <div className="flex-1 space-y-1">
-                                <div className="flex flex-wrap items-baseline gap-2">
-                                  <h3 className="font-serif text-2xl font-bold text-[#1A1A1A] tracking-tight">{series.title}</h3>
-                                  <span className="text-xs font-serif italic opacity-60">by {series.author}</span>
+                              <div className="flex-1 space-y-2">
+                                <div className="flex flex-wrap items-baseline gap-2.5">
+                                  <h3 className="font-display text-2xl font-black text-[#1A1A1A] tracking-tight">{series.title}</h3>
+                                  <span className="text-xs font-playful font-semibold text-[#F2A359]">by {series.author} ✍️</span>
                                 </div>
-                                <p className="text-xs font-serif opacity-70 line-clamp-1 pr-6">{series.description}</p>
+                                <p className="text-xs font-sans text-[#1A1A1A]/70 line-clamp-1 pr-6">{series.description}</p>
                                 
-                                <div className="flex flex-wrap items-center gap-4 pt-2">
-                                  {/* Minimalist Status Badge */}
-                                  <span className="text-[9px] font-mono tracking-widest uppercase px-2 py-0.5 bg-[#EBE9E4] border border-[#1A1A1A]/10 font-bold">
-                                    {series.status}
+                                <div className="flex flex-wrap items-center gap-3 pt-2">
+                                  {/* Playful Status Badge */}
+                                  <span className={`text-[10px] font-playful font-bold uppercase px-3 py-1 border-2 border-[#1A1A1A] rounded-full shadow-[1px_1px_0px_0px_#1A1A1A] ${
+                                    series.status === "reading" ? "bg-[#FFE8CC]" : 
+                                    series.status === "completed" ? "bg-[#E3E0F3]" :
+                                    series.status === "paused" ? "bg-[#FADCE6]" : "bg-[#DFF0EA]"
+                                  }`}>
+                                    {series.status === "reading" ? "📖 reading" : 
+                                     series.status === "completed" ? "🎉 completed" :
+                                     series.status === "paused" ? "⏸️ paused" : "✅ up-to-date"}
                                   </span>
-                                  {/* Mini numeric progress */}
-                                  <span className="text-[10px] font-mono text-[#1A1A1A]/60">
-                                    {readCount}/{series.books.length} read ({bookPercent}%)
+                                  {/* Progress label */}
+                                  <span className="text-xs font-playful font-extrabold text-[#1A1A1A]/75">
+                                    {readCount} of {series.books.length} read ({bookPercent}%)
                                   </span>
                                   {/* Ratings stars */}
                                   {series.rating ? (
-                                    <div className="flex items-center text-[#1A1A1A]">
+                                    <div className="flex items-center gap-0.5 text-[#F2A359]">
                                       {[...Array(5)].map((_, i) => (
-                                        <Star key={i} className={`w-3 h-3 ${i < (series.rating || 0) ? "fill-current" : "opacity-20"}`} />
+                                        <Star key={i} className={`w-3.5 h-3.5 ${i < (series.rating || 0) ? "fill-[#F2A359] text-[#1A1A1A] stroke-[2]" : "opacity-20 text-[#1A1A1A]"}`} />
                                       ))}
                                     </div>
                                   ) : null}
@@ -1464,29 +1489,29 @@ export default function App() {
 
                               <div className="flex items-center gap-3 self-end sm:self-auto">
                                 {series.upcomingBook && (
-                                  <span className="text-[9px] font-mono tracking-widest uppercase px-2 py-0.5 bg-[#C45B31] text-white font-bold animate-pulse">
-                                    Sequel announced
+                                  <span className="text-[10px] font-playful font-extrabold uppercase px-3 py-1 bg-[#FF6B4A] text-white border-2 border-[#1A1A1A] rounded-full shadow-[2px_2px_0px_0px_#1A1A1A] animate-pulse">
+                                    Sequel! 🚀
                                   </span>
                                 )}
-                                <div className="p-1 border border-[#1A1A1A]/10 rounded-full">
-                                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                <div className="p-1.5 border-2 border-[#1A1A1A] bg-[#FFFDF3] rounded-xl shadow-[1.5px_1.5px_0px_0px_#1A1A1A]">
+                                  {isExpanded ? <ChevronUp className="w-4 h-4 stroke-[2.5]" /> : <ChevronDown className="w-4 h-4 stroke-[2.5]" />}
                                 </div>
                               </div>
                             </div>
 
                             {/* Card Content details */}
                             {isExpanded && (
-                              <div className="border-t border-[#1A1A1A] p-5 md:p-6 bg-[#FAF9F6]">
+                              <div className="border-t-2 border-[#1A1A1A] p-6 md:p-8 bg-[#FFFDF3]/30">
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                                   
                                   {/* Checklist - Left column */}
                                   <div className="lg:col-span-7 space-y-4">
-                                    <div className="flex justify-between items-center border-b border-[#1A1A1A]/10 pb-2">
-                                      <span className="text-[10px] font-mono uppercase tracking-widest opacity-60">Reading Ledger</span>
-                                      <span className="text-[10px] font-mono opacity-40">Tap volume to check off</span>
+                                    <div className="flex justify-between items-center border-b-2 border-[#1A1A1A]/10 pb-2">
+                                      <span className="text-[10px] font-playful font-bold uppercase tracking-wider text-[#1A1A1A]/50">Reading Ledger 📔</span>
+                                      <span className="text-[10px] font-playful font-bold text-[#FF6B4A]">Tap volume to check off!</span>
                                     </div>
 
-                                    <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                                    <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
                                       {series.books.map(book => {
                                         // Hide unless Corrections Mode is active to keep checklist clean
                                         if (book.isHidden && showCorrectionsId !== series.id) return null;
@@ -1494,38 +1519,38 @@ export default function App() {
                                         return (
                                           <div
                                             key={book.id}
-                                            className="border border-[#1A1A1A] bg-white divide-y divide-[#1A1A1A]/10"
+                                            className="border-2 border-[#1A1A1A] bg-white rounded-2xl overflow-hidden shadow-[2px_2px_0px_0px_#1A1A1A] transition-all hover:translate-y-[-1px]"
                                           >
                                             <div 
-                                              className={`p-3 transition-all flex items-center justify-between ${
+                                              className={`p-4 transition-all flex items-center justify-between ${
                                                 book.isRead 
-                                                  ? "bg-[#EBE9E4]/40 opacity-75" 
-                                                  : "bg-white hover:bg-[#FAF9F6]"
+                                                  ? "bg-[#4FB06D]/10 opacity-80" 
+                                                  : "bg-white hover:bg-[#FFFDF3]/30"
                                               }`}
                                             >
                                               <div 
                                                 onClick={() => handleToggleBookRead(series.id, book.id)}
                                                 className="flex items-start gap-3 flex-1 cursor-pointer select-none"
                                               >
-                                                <div className={`w-4 h-4 border border-[#1A1A1A] flex items-center justify-center transition-all mt-0.5 ${
-                                                  book.isRead ? "bg-[#1A1A1A] text-[#FAF9F6]" : "bg-white"
+                                                <div className={`w-5 h-5 border-2 border-[#1A1A1A] rounded-md flex items-center justify-center transition-all mt-0.5 ${
+                                                  book.isRead ? "bg-[#4FB06D] text-white" : "bg-white"
                                                 }`}>
-                                                  {book.isRead && <Check className="w-3 h-3 stroke-[3]" />}
+                                                  {book.isRead && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                                                 </div>
                                                 <div>
-                                                  <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
-                                                    <span className="text-[9px] font-mono text-[#1A1A1A]/40 block leading-none">Vol. {book.volumeNumber}</span>
+                                                  <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                                                    <span className="text-[10px] font-playful font-bold text-[#F2A359] block leading-none">Vol. {book.volumeNumber}</span>
                                                     {book.isNovella && (
-                                                      <span className="text-[8px] font-mono bg-[#EBE9E4] text-[#1A1A1A] px-1 uppercase tracking-wider scale-95 border border-[#1A1A1A]/10">Novella</span>
+                                                      <span className="text-[8px] font-playful font-bold bg-[#E3E0F3] text-[#1A1A1A] px-2 py-0.5 rounded uppercase tracking-wider border border-[#1A1A1A]/10">Novella</span>
                                                     )}
                                                     {book.isSpinOff && (
-                                                      <span className="text-[8px] font-mono bg-[#EBE9E4] text-[#1A1A1A] px-1 uppercase tracking-wider scale-95 border border-[#1A1A1A]/10">Spin-Off</span>
+                                                      <span className="text-[8px] font-playful font-bold bg-[#DFF0EA] text-[#1A1A1A] px-2 py-0.5 rounded uppercase tracking-wider border border-[#1A1A1A]/10">Spin-Off</span>
                                                     )}
                                                     {book.isHidden && (
-                                                      <span className="text-[8px] font-mono bg-[#C45B31] text-white px-1 uppercase tracking-wider scale-95">Hidden</span>
+                                                      <span className="text-[8px] font-playful font-bold bg-[#FF6B4A] text-white px-2 py-0.5 rounded uppercase tracking-wider">Hidden</span>
                                                     )}
                                                   </div>
-                                                  <span className={`text-xs font-serif font-bold block ${book.isRead ? "line-through opacity-50" : ""}`}>
+                                                  <span className={`text-xs font-sans font-bold block ${book.isRead ? "line-through opacity-50 text-[#1A1A1A]/60" : "text-[#1A1A1A]"}`}>
                                                     {book.title}
                                                   </span>
                                                 </div>
@@ -1539,26 +1564,26 @@ export default function App() {
                                                       value={book.releaseDate || ""}
                                                       placeholder="YYYY-MM-DD"
                                                       onChange={(e) => handleOverrideReleaseDate(series.id, book.id, e.target.value)}
-                                                      className="text-[9px] font-mono border border-[#1A1A1A] px-1.5 py-0.5 w-24 bg-[#FAF9F6] text-center"
+                                                      className="text-[10px] font-mono font-bold border-2 border-[#1A1A1A] px-2 py-1 rounded-lg w-28 bg-[#FFFDF3] text-center focus:outline-none"
                                                       title="Override launch date"
                                                     />
                                                     <button
                                                       onClick={() => handleMoveBook(series.id, book.id, "up")}
-                                                      className="p-1 border border-[#1A1A1A]/20 hover:bg-[#EBE9E4] rounded cursor-pointer"
+                                                      className="p-1 border-2 border-[#1A1A1A] bg-white hover:bg-[#FFE8CC] rounded-lg cursor-pointer"
                                                       title="Move Up"
                                                     >
-                                                      <ArrowUp className="w-2.5 h-2.5" />
+                                                      <ArrowUp className="w-3 h-3 stroke-[2.5]" />
                                                     </button>
                                                     <button
                                                       onClick={() => handleMoveBook(series.id, book.id, "down")}
-                                                      className="p-1 border border-[#1A1A1A]/20 hover:bg-[#EBE9E4] rounded cursor-pointer"
+                                                      className="p-1 border-2 border-[#1A1A1A] bg-white hover:bg-[#FFE8CC] rounded-lg cursor-pointer"
                                                       title="Move Down"
                                                     >
-                                                      <ArrowDown className="w-2.5 h-2.5" />
+                                                      <ArrowDown className="w-3 h-3 stroke-[2.5]" />
                                                     </button>
                                                   </div>
                                                 ) : (
-                                                  <span className="text-[9px] font-mono text-[#1A1A1A]/60 bg-[#EBE9E4] px-1.5 py-0.5">
+                                                  <span className="text-[10px] font-mono font-bold text-[#1A1A1A]/60 bg-[#EBE9E4] px-2.5 py-0.5 rounded-md border border-[#1A1A1A]/10">
                                                     {book.releaseDate || "TBA"}
                                                   </span>
                                                 )}
@@ -1567,30 +1592,30 @@ export default function App() {
 
                                             {/* Flag Toggles Panel when Corrections is active */}
                                             {showCorrectionsId === series.id && (
-                                              <div className="p-2 bg-[#EBE9E4]/20 flex items-center justify-between text-[9px] font-mono gap-4" onClick={(e) => e.stopPropagation()}>
-                                                <span className="opacity-50 text-[8px] uppercase font-bold">Metadata Flag Overrides:</span>
+                                              <div className="p-2.5 bg-[#FFFDF3] border-t-2 border-[#1A1A1A] flex items-center justify-between text-[10px] font-playful font-bold gap-4" onClick={(e) => e.stopPropagation()}>
+                                                <span className="opacity-50 uppercase text-[9px]">Custom Book Tags:</span>
                                                 <div className="flex gap-1.5">
                                                   <button
                                                     onClick={() => handleToggleBookFlag(series.id, book.id, "hidden")}
-                                                    className={`px-2 py-0.5 border text-[8px] cursor-pointer rounded flex items-center gap-1 ${
-                                                      book.isHidden ? "bg-[#C45B31] text-white border-[#C45B31]" : "bg-white text-[#1A1A1A] border-[#1A1A1A]/20 hover:bg-[#FAF9F6]"
+                                                    className={`px-2 py-1 border-2 border-[#1A1A1A] text-[9px] font-bold cursor-pointer rounded-lg flex items-center gap-1 ${
+                                                      book.isHidden ? "bg-[#FF6B4A] text-white" : "bg-white text-[#1A1A1A] hover:bg-[#FFE8CC]"
                                                     }`}
                                                   >
-                                                    {book.isHidden ? <EyeOff className="w-2.5 h-2.5" /> : <Eye className="w-2.5 h-2.5" />}
-                                                    {book.isHidden ? "Hidden" : "Hide"}
+                                                    {book.isHidden ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                                    {book.isHidden ? "Hidden" : "Hide Book"}
                                                   </button>
                                                   <button
                                                     onClick={() => handleToggleBookFlag(series.id, book.id, "novella")}
-                                                    className={`px-2 py-0.5 border text-[8px] cursor-pointer rounded ${
-                                                      book.isNovella ? "bg-[#1A1A1A] text-white border-[#1A1A1A]" : "bg-white text-[#1A1A1A] border-[#1A1A1A]/20 hover:bg-[#FAF9F6]"
+                                                    className={`px-2 py-1 border-2 border-[#1A1A1A] text-[9px] font-bold cursor-pointer rounded-lg ${
+                                                      book.isNovella ? "bg-[#4F46E5] text-white" : "bg-white text-[#1A1A1A] hover:bg-[#FFE8CC]"
                                                     }`}
                                                   >
                                                     Novella
                                                   </button>
                                                   <button
                                                     onClick={() => handleToggleBookFlag(series.id, book.id, "spinoff")}
-                                                    className={`px-2 py-0.5 border text-[8px] cursor-pointer rounded ${
-                                                      book.isSpinOff ? "bg-[#1A1A1A] text-white border-[#1A1A1A]" : "bg-white text-[#1A1A1A] border-[#1A1A1A]/20 hover:bg-[#FAF9F6]"
+                                                    className={`px-2 py-1 border-2 border-[#1A1A1A] text-[9px] font-bold cursor-pointer rounded-lg ${
+                                                      book.isSpinOff ? "bg-[#4FB06D] text-white" : "bg-white text-[#1A1A1A] hover:bg-[#FFE8CC]"
                                                     }`}
                                                   >
                                                     Spin-off
@@ -1605,121 +1630,121 @@ export default function App() {
                                   </div>
 
                                   {/* Meta column - Right column */}
-                                  <div className="lg:col-span-5 flex flex-col justify-between space-y-6 lg:border-l lg:border-[#1A1A1A]/10 lg:pl-6">
+                                  <div className="lg:col-span-5 flex flex-col justify-between space-y-6 lg:border-l-2 lg:border-[#1A1A1A]/10 lg:pl-6">
                                     
                                     {/* Upcoming sequel card */}
                                     {series.upcomingBook ? (
-                                      <div className="bg-[#EBE9E4] border border-[#1A1A1A] p-4">
-                                        <div className="flex items-center gap-1.5 text-[#C45B31] mb-1">
-                                          <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                                          <span className="font-mono text-[9px] tracking-widest uppercase font-bold">Upcoming Release</span>
+                                      <div className="bg-[#FFE8CC] border-2 border-[#1A1A1A] p-5 rounded-2xl shadow-[2px_2px_0px_0px_#1A1A1A]">
+                                        <div className="flex items-center gap-1.5 text-[#FF6B4A] mb-1.5">
+                                          <Sparkles className="w-4 h-4 animate-bounce" />
+                                          <span className="font-playful text-[10px] tracking-wide uppercase font-bold">Upcoming Release 🚀</span>
                                         </div>
-                                        <h4 className="font-serif font-bold text-sm text-[#1A1A1A] leading-tight">
+                                        <h4 className="font-display font-extrabold text-base text-[#1A1A1A] leading-tight">
                                           {series.upcomingBook.title}
                                         </h4>
-                                        <p className="text-[11px] font-serif opacity-75 mt-1 leading-relaxed">
+                                        <p className="text-[11px] font-sans text-[#1A1A1A]/80 mt-1.5 leading-relaxed">
                                           {series.upcomingBook.description || "Publishers are setting the launch coordinates."}
                                         </p>
                                         <div className="border-t border-[#1A1A1A]/10 mt-3 pt-2.5 flex justify-between items-center text-[10px]">
-                                          <span className="font-mono opacity-60 uppercase">Launch Confidence:</span>
-                                          <span className={`font-mono uppercase font-bold px-1.5 py-0.5 border ${
-                                            series.upcomingBook.confidence === "confirmed" ? "bg-[#1A1A1A] text-[#FAF9F6] border-[#1A1A1A]" : "bg-white border-[#1A1A1A]/20 text-[#1A1A1A]"
+                                          <span className="font-playful font-bold opacity-60 uppercase">Confidence Level:</span>
+                                          <span className={`font-playful uppercase font-bold px-2 py-0.5 border border-[#1A1A1A] rounded-md ${
+                                            series.upcomingBook.confidence === "confirmed" ? "bg-[#4FB06D] text-white" : "bg-white text-[#1A1A1A]"
                                           }`}>
                                             {series.upcomingBook.confidence || "confirmed"}
                                           </span>
                                         </div>
                                         <div className="border-t border-[#1A1A1A]/10 mt-2 pt-2.5 flex justify-between items-center">
-                                          <span className="text-[9px] font-mono opacity-60 uppercase">Launch Date:</span>
-                                          <span className="text-xs font-mono font-bold bg-[#FAF9F6] border border-[#1A1A1A] px-1.5 py-0.5">
+                                          <span className="text-[10px] font-playful font-bold opacity-60 uppercase">Launch Date:</span>
+                                          <span className="text-xs font-mono font-bold bg-white border-2 border-[#1A1A1A] px-2 py-0.5 rounded-lg shadow-[1px_1px_0px_0px_#1A1A1A]">
                                             {series.upcomingBook.releaseDate}
                                           </span>
                                         </div>
                                       </div>
                                     ) : (
-                                      <div className="border border-[#1A1A1A]/10 p-4 bg-[#FAF9F6] text-center">
-                                        <span className="text-[9px] font-mono uppercase tracking-widest opacity-40 block mb-1">Upcoming release</span>
-                                        <p className="text-xs font-serif italic opacity-50">No new mainline sequel announced yet.</p>
+                                      <div className="border-2 border-dashed border-[#1A1A1A]/30 p-5 bg-[#FFFDF3] rounded-2xl text-center">
+                                        <span className="text-[10px] font-playful uppercase tracking-wider text-[#1A1A1A]/40 block mb-1">Upcoming release</span>
+                                        <p className="text-xs font-playful italic text-[#1A1A1A]/50">No new mainline sequel announced yet.</p>
                                       </div>
                                     )}
 
                                     {/* Notes / Stars */}
-                                    <div className="border border-[#1A1A1A] p-4 bg-white">
+                                    <div className="border-2 border-[#1A1A1A] p-5 bg-white rounded-2xl shadow-[2px_2px_0px_0px_#1A1A1A]">
                                       {editingId === series.id ? (
                                         <div className="space-y-3">
                                           <div>
-                                            <label className="text-[9px] font-mono uppercase tracking-wider opacity-60 block mb-1">Rating</label>
-                                            <div className="flex items-center gap-1">
+                                            <label className="text-[10px] font-playful font-bold uppercase tracking-wider text-[#1A1A1A]/50 block mb-1">My Star Rating</label>
+                                            <div className="flex items-center gap-1.5">
                                               {[1, 2, 3, 4, 5].map(val => (
                                                 <button 
                                                   key={val} 
                                                   onClick={() => setEditRating(val)}
-                                                  className="cursor-pointer text-[#1A1A1A]"
+                                                  className="cursor-pointer text-[#F2A359] scale-110 hover:scale-125 transition-transform"
                                                 >
-                                                  <Star className={`w-4 h-4 ${val <= editRating ? "fill-current" : "opacity-20"}`} />
+                                                  <Star className={`w-5 h-5 ${val <= editRating ? "fill-[#F2A359] text-[#1A1A1A] stroke-[2.5]" : "opacity-20 text-[#1A1A1A]"}`} />
                                                 </button>
                                               ))}
                                             </div>
                                           </div>
                                           <div>
-                                            <label className="text-[9px] font-mono uppercase tracking-wider opacity-60 block mb-1">Personal Notes</label>
+                                            <label className="text-[10px] font-playful font-bold uppercase tracking-wider text-[#1A1A1A]/50 block mb-1">Personal Notes</label>
                                             <textarea
                                               value={editNotes}
                                               onChange={(e) => setEditNotes(e.target.value)}
                                               rows={2}
-                                              placeholder="Reading theories, reviews..."
-                                              className="w-full text-xs font-serif p-2 border border-[#1A1A1A] bg-[#FAF9F6] focus:outline-none"
+                                              placeholder="Prediction, thoughts, feelings, or reviews..."
+                                              className="w-full text-xs font-sans p-2 border-2 border-[#1A1A1A] rounded-xl bg-[#FFFDF3] focus:outline-none"
                                             />
                                           </div>
-                                          <div className="flex justify-end gap-2">
+                                          <div className="flex justify-end gap-2 pt-1">
                                             <button 
                                               onClick={() => setEditingId(null)} 
-                                              className="text-[10px] font-mono uppercase tracking-wider px-2 py-1 cursor-pointer hover:underline"
+                                              className="text-[11px] font-playful font-bold uppercase border border-transparent px-3 py-1 cursor-pointer hover:underline text-[#1A1A1A]/70"
                                             >
                                               Cancel
                                             </button>
                                             <button 
                                               onClick={() => handleSaveNotesAndRating(series.id)} 
-                                              className="text-[10px] font-mono uppercase tracking-wider px-3 py-1 bg-[#1A1A1A] text-white cursor-pointer hover:bg-black"
+                                              className="text-[11px] font-playful font-bold uppercase border-2 border-[#1A1A1A] bg-[#FF6B4A] text-white px-4 py-1.5 rounded-xl shadow-[1px_1px_0px_0px_#1A1A1A] cursor-pointer hover:bg-[#FF5C35]"
                                             >
-                                              Save
+                                              Save Annotation 📝
                                             </button>
                                           </div>
                                         </div>
                                       ) : (
-                                        <div className="space-y-1.5">
+                                        <div className="space-y-2">
                                           <div className="flex justify-between items-baseline">
-                                            <span className="text-[9px] font-mono uppercase tracking-widest opacity-40">My Annotations</span>
+                                            <span className="text-[10px] font-playful font-bold uppercase tracking-wider text-[#1A1A1A]/50">My Annotations</span>
                                             <button 
                                               onClick={() => {
                                                 setEditingId(series.id);
                                                 setEditNotes(series.notes || "");
                                                 setEditRating(series.rating || 0);
                                               }}
-                                              className="text-[9px] font-mono uppercase tracking-widest underline opacity-60 hover:opacity-100 cursor-pointer"
+                                              className="text-[10px] font-playful font-bold uppercase underline text-[#FF6B4A] hover:text-[#FF5C35] cursor-pointer"
                                             >
-                                              Edit Details
+                                              Edit Notes ✍️
                                             </button>
                                           </div>
-                                          <p className="text-xs font-serif italic opacity-85 leading-relaxed">
-                                            {series.notes ? `"${series.notes}"` : "Click Edit to note theories or predictions."}
+                                          <p className="text-xs font-sans italic text-[#1A1A1A]/85 leading-relaxed bg-[#FFFDF3] p-3 rounded-xl border border-[#1A1A1A]/10">
+                                            {series.notes ? `"${series.notes}"` : "Click Edit to note theories, predictions or bookmarks!"}
                                           </p>
                                         </div>
                                       )}
                                     </div>
 
                                     {/* Action row */}
-                                    <div className="border-t border-[#1A1A1A]/10 pt-4 flex flex-wrap gap-3 justify-between items-center">
+                                    <div className="border-t-2 border-[#1A1A1A]/10 pt-4 flex flex-wrap gap-3 justify-between items-center">
                                       <div className="flex items-center gap-2">
-                                        <label className="text-[9px] font-mono uppercase tracking-wider opacity-60">Status:</label>
+                                        <label className="text-[10px] font-playful font-bold uppercase tracking-wider text-[#1A1A1A]/50">Shelf Status:</label>
                                         <select
                                           value={series.status}
                                           onChange={(e) => handleUpdateStatus(series.id, e.target.value as TrackedSeries["status"])}
-                                          className="text-xs font-mono bg-white border border-[#1A1A1A] px-2 py-1 cursor-pointer focus:outline-none"
+                                          className="text-xs font-playful font-bold bg-white border-2 border-[#1A1A1A] rounded-xl px-3 py-1.5 cursor-pointer focus:outline-none shadow-[2px_2px_0px_0px_#1A1A1A]"
                                         >
-                                          <option value="reading">Reading</option>
-                                          <option value="up-to-date">Up-to-Date</option>
-                                          <option value="completed">Completed</option>
-                                          <option value="paused">Paused</option>
+                                          <option value="reading">📖 Reading</option>
+                                          <option value="up-to-date">✅ Up-to-Date</option>
+                                          <option value="completed">🎉 Completed</option>
+                                          <option value="paused">⏸️ Paused</option>
                                         </select>
                                       </div>
 
@@ -1727,14 +1752,14 @@ export default function App() {
                                         {/* Adjustments toggle button */}
                                         <button
                                           onClick={() => handleOpenCorrections(series)}
-                                          className={`px-3 py-1 border text-[10px] font-mono uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+                                          className={`px-3 py-1.5 border-2 border-[#1A1A1A] rounded-xl text-[11px] font-playful font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-[2px_2px_0px_0px_#1A1A1A] ${
                                             showCorrectionsId === series.id 
-                                              ? "bg-[#C45B31] text-[#FAF9F6] border-[#C45B31]" 
-                                              : "bg-white text-[#1A1A1A] border-[#1A1A1A] hover:bg-[#EBE9E4]"
+                                              ? "bg-[#FF6B4A] text-white" 
+                                              : "bg-white text-[#1A1A1A] hover:bg-[#FFE8CC]"
                                           }`}
                                           title="Override details, volumes, or metadata"
                                         >
-                                          <Sliders className="w-3 h-3" />
+                                          <Sliders className="w-3.5 h-3.5" />
                                           Adjustments
                                         </button>
 
@@ -1742,14 +1767,14 @@ export default function App() {
                                           onClick={() => handleRefreshSeries(series.id)}
                                           disabled={isRefreshing}
                                           title="Sync news & book list via Gemini grounding search"
-                                          className="p-1.5 border border-[#1A1A1A] bg-white hover:bg-[#EBE9E4] cursor-pointer transition-all"
+                                          className="p-2 border-2 border-[#1A1A1A] bg-white rounded-xl shadow-[2px_2px_0px_0px_#1A1A1A] hover:bg-[#FFE8CC] cursor-pointer transition-all disabled:opacity-40"
                                         >
                                           <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
                                         </button>
                                         <button
                                           onClick={() => handleDeleteSeries(series.id)}
-                                          title="Delete tracking queue"
-                                          className="p-1.5 border border-[#1A1A1A] bg-[#C45B31]/10 text-[#C45B31] hover:bg-[#C45B31]/20 cursor-pointer transition-all"
+                                          className="p-2 border-2 border-[#1A1A1A] bg-white text-[#C45B31] rounded-xl shadow-[2px_2px_0px_0px_#1A1A1A] hover:bg-[#FADCE6] hover:text-red-600 cursor-pointer transition-all"
+                                          title="Remove from Shelf"
                                         >
                                           <Trash2 className="w-3.5 h-3.5" />
                                         </button>
@@ -1760,65 +1785,65 @@ export default function App() {
 
                                   {/* If Corrections is Active, render Custom additions & Sequel Editing Panel */}
                                   {showCorrectionsId === series.id && (
-                                    <div className="lg:col-span-12 border border-[#1A1A1A] bg-white p-5 space-y-6">
-                                      <div className="border-b border-[#1A1A1A]/10 pb-2">
-                                        <h4 className="font-serif font-bold text-sm text-[#1A1A1A]">Manual Editorial Overrides for {series.title}</h4>
-                                        <p className="text-[10px] font-mono opacity-50 mt-0.5">Correct missing or misaligned publisher records instantly.</p>
+                                    <div className="lg:col-span-12 border-2 border-[#1A1A1A] bg-[#FFFDF3] p-6 rounded-2xl space-y-6 shadow-[3px_3px_0px_0px_#1A1A1A]">
+                                      <div className="border-b-2 border-[#1A1A1A]/10 pb-3">
+                                        <h4 className="font-display font-black text-sm text-[#1A1A1A]">🛠️ Manual Adjustments for {series.title}</h4>
+                                        <p className="text-[10px] font-playful font-bold text-[#1A1A1A]/50 mt-0.5">Override dates, add hidden books, or fix sequels.</p>
                                       </div>
 
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {/* Form 1: Add Missing Book */}
                                         <div className="space-y-3">
-                                          <span className="text-[10px] font-mono uppercase tracking-wider text-[#C45B31] font-bold block">1. Inject Missing Volume</span>
+                                          <span className="text-[10px] font-playful font-bold uppercase tracking-wider text-[#FF6B4A] block">1. Add Missing Book / Vol</span>
                                           <div className="grid grid-cols-3 gap-2">
                                             <div className="col-span-2">
-                                              <label className="text-[9px] font-mono block mb-1 opacity-60">Title</label>
+                                              <label className="text-[9px] font-playful font-bold block mb-1 opacity-60">Book Title</label>
                                               <input
                                                 type="text"
                                                 value={newBookTitle}
                                                 onChange={(e) => setNewBookTitle(e.target.value)}
                                                 placeholder="e.g. Dawnshard"
-                                                className="w-full text-xs font-serif p-1.5 border border-[#1A1A1A] bg-[#FAF9F6] focus:outline-none"
+                                                className="w-full text-xs font-sans p-2 border-2 border-[#1A1A1A] rounded-xl bg-white focus:outline-none"
                                               />
                                             </div>
                                             <div>
-                                              <label className="text-[9px] font-mono block mb-1 opacity-60">Volume #</label>
+                                              <label className="text-[9px] font-playful font-bold block mb-1 opacity-60">Vol #</label>
                                               <input
                                                 type="number"
                                                 value={newBookVol}
                                                 onChange={(e) => setNewBookVol(Number(e.target.value))}
                                                 step="0.5"
-                                                className="w-full text-xs font-serif p-1.5 border border-[#1A1A1A] bg-[#FAF9F6] focus:outline-none"
+                                                className="w-full text-xs font-sans p-2 border-2 border-[#1A1A1A] rounded-xl bg-white focus:outline-none"
                                               />
                                             </div>
                                           </div>
                                           <div className="grid grid-cols-2 gap-2">
                                             <div>
-                                              <label className="text-[9px] font-mono block mb-1 opacity-60">Release Date (YYYY-MM-DD)</label>
+                                              <label className="text-[9px] font-playful font-bold block mb-1 opacity-60">Release Date (YYYY-MM-DD)</label>
                                               <input
                                                 type="text"
                                                 value={newBookRelease}
                                                 onChange={(e) => setNewBookRelease(e.target.value)}
                                                 placeholder="e.g. 2020-10-27"
-                                                className="w-full text-xs font-serif p-1.5 border border-[#1A1A1A] bg-[#FAF9F6] focus:outline-none"
+                                                className="w-full text-xs font-sans p-2 border-2 border-[#1A1A1A] rounded-xl bg-white focus:outline-none"
                                               />
                                             </div>
                                             <div className="flex items-center gap-4 pt-4">
-                                              <label className="flex items-center gap-1.5 text-[10px] font-mono cursor-pointer">
+                                              <label className="flex items-center gap-1.5 text-[10px] font-playful font-bold cursor-pointer">
                                                 <input
                                                   type="checkbox"
                                                   checked={newBookIsNovella}
                                                   onChange={(e) => setNewBookIsNovella(e.target.checked)}
-                                                  className="accent-[#1A1A1A]"
+                                                  className="accent-[#FF6B4A]"
                                                 />
                                                 Novella
                                               </label>
-                                              <label className="flex items-center gap-1.5 text-[10px] font-mono cursor-pointer">
+                                              <label className="flex items-center gap-1.5 text-[10px] font-playful font-bold cursor-pointer">
                                                 <input
                                                   type="checkbox"
                                                   checked={newBookIsSpinOff}
                                                   onChange={(e) => setNewBookIsSpinOff(e.target.checked)}
-                                                  className="accent-[#1A1A1A]"
+                                                  className="accent-[#FF6B4A]"
                                                 />
                                                 Spin-off
                                               </label>
@@ -1826,43 +1851,43 @@ export default function App() {
                                           </div>
                                           <button
                                             onClick={() => handleAddCustomBook(series.id)}
-                                            className="px-4 py-1.5 bg-[#1A1A1A] text-white text-[10px] font-mono uppercase tracking-widest hover:bg-black transition-colors cursor-pointer"
+                                            className="px-4 py-2 bg-[#1A1A1A] text-white text-[11px] font-playful font-bold uppercase rounded-xl border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A] hover:bg-[#FF6B4A] transition-all cursor-pointer"
                                           >
-                                            Add Book to Ledger
+                                            Add to Ledger 📥
                                           </button>
                                         </div>
 
                                         {/* Form 2: Edit Sequel Details */}
                                         <div className="space-y-3">
-                                          <span className="text-[10px] font-mono uppercase tracking-wider text-[#C45B31] font-bold block">2. Override Upcoming Sequel details</span>
+                                          <span className="text-[10px] font-playful font-bold uppercase tracking-wider text-[#FF6B4A] block">2. Override Upcoming Sequel</span>
                                           <div className="grid grid-cols-2 gap-2">
                                             <div>
-                                              <label className="text-[9px] font-mono block mb-1 opacity-60">Sequel Title</label>
+                                              <label className="text-[9px] font-playful font-bold block mb-1 opacity-60">Sequel Title</label>
                                               <input
                                                 type="text"
                                                 value={upcomingTitle}
                                                 onChange={(e) => setUpcomingTitle(e.target.value)}
                                                 placeholder="e.g. Doors of Stone"
-                                                className="w-full text-xs font-serif p-1.5 border border-[#1A1A1A] bg-[#FAF9F6] focus:outline-none"
+                                                className="w-full text-xs font-sans p-2 border-2 border-[#1A1A1A] rounded-xl bg-white focus:outline-none"
                                               />
                                             </div>
                                             <div>
-                                              <label className="text-[9px] font-mono block mb-1 opacity-60">Expected Release</label>
+                                              <label className="text-[9px] font-playful font-bold block mb-1 opacity-60">Expected Release</label>
                                               <input
                                                 type="text"
                                                 value={upcomingRelease}
                                                 onChange={(e) => setUpcomingRelease(e.target.value)}
                                                 placeholder="e.g. TBA 2026"
-                                                className="w-full text-xs font-serif p-1.5 border border-[#1A1A1A] bg-[#FAF9F6] focus:outline-none"
+                                                className="w-full text-xs font-sans p-2 border-2 border-[#1A1A1A] rounded-xl bg-white focus:outline-none"
                                               />
                                             </div>
                                           </div>
                                           <div>
-                                            <label className="text-[9px] font-mono block mb-1 opacity-60">Confidence Level</label>
+                                            <label className="text-[9px] font-playful font-bold block mb-1 opacity-60">Confidence Level</label>
                                             <select
                                               value={upcomingConf}
                                               onChange={(e) => setUpcomingConf(e.target.value as any)}
-                                              className="w-full text-xs font-serif p-1.5 border border-[#1A1A1A] bg-[#FAF9F6] focus:outline-none cursor-pointer"
+                                              className="w-full text-xs font-sans p-2 border-2 border-[#1A1A1A] rounded-xl bg-white focus:outline-none cursor-pointer"
                                             >
                                               <option value="confirmed">Confirmed (Publisher Verified)</option>
                                               <option value="likely">Likely (Author updates)</option>
@@ -1871,27 +1896,27 @@ export default function App() {
                                             </select>
                                           </div>
                                           <div>
-                                            <label className="text-[9px] font-mono block mb-1 opacity-60">Brief Status / Description</label>
+                                            <label className="text-[9px] font-playful font-bold block mb-1 opacity-60">Brief Status / Description</label>
                                             <input
                                               type="text"
                                               value={upcomingDesc}
                                               onChange={(e) => setUpcomingDesc(e.target.value)}
                                               placeholder="e.g. Draft complete, undergoing editorial reviews."
-                                              className="w-full text-xs font-serif p-1.5 border border-[#1A1A1A] bg-[#FAF9F6] focus:outline-none"
+                                              className="w-full text-xs font-sans p-2 border-2 border-[#1A1A1A] rounded-xl bg-white focus:outline-none"
                                             />
                                           </div>
                                           <div className="flex gap-2">
                                             <button
                                               onClick={() => handleUpdateUpcomingBook(series.id)}
-                                              className="px-4 py-1.5 bg-[#1A1A1A] text-white text-[10px] font-mono uppercase tracking-widest hover:bg-black transition-colors cursor-pointer"
+                                              className="px-4 py-2 bg-[#1A1A1A] text-white text-[11px] font-playful font-bold uppercase rounded-xl border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A] hover:bg-[#FF6B4A] transition-all cursor-pointer"
                                             >
-                                              Save Sequel details
+                                              Save Sequel details 💾
                                             </button>
                                             <button
                                               onClick={() => handleReportBadMetadata(series.id)}
-                                              className="px-4 py-1.5 border border-[#1A1A1A]/40 text-[10px] font-mono uppercase tracking-widest hover:bg-[#EBE9E4] transition-colors cursor-pointer text-[#1A1A1A]"
+                                              className="px-4 py-2 border-2 border-[#1A1A1A] bg-white text-[#1A1A1A] text-[11px] font-playful font-bold uppercase rounded-xl shadow-[2px_2px_0px_0px_#1A1A1A] hover:bg-[#FFE8CC] transition-all cursor-pointer"
                                             >
-                                              Trigger deep ground scan
+                                              Scan Live News 🔍
                                             </button>
                                           </div>
                                         </div>
@@ -1917,31 +1942,31 @@ export default function App() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.15 }}
-                  className="space-y-6"
+                  className="space-y-8"
                 >
                   {/* Web search controls */}
-                  <div className="border border-[#1A1A1A] p-6 md:p-8 bg-white space-y-4">
-                    <h3 className="font-serif text-3xl font-light tracking-tight text-[#1A1A1A]">Search Publisher Registries</h3>
-                    <p className="text-xs font-serif opacity-75 leading-relaxed max-w-2xl">
+                  <div className="border-2 border-[#1A1A1A] p-6 md:p-8 bg-white rounded-3xl space-y-5 shadow-[4px_4px_0px_0px_#1A1A1A]">
+                    <h3 className="font-display text-3xl font-black text-[#1A1A1A] tracking-tight">Search Publisher Registries 🔍</h3>
+                    <p className="text-xs font-sans text-[#1A1A1A]/75 leading-relaxed max-w-2xl">
                       Query any real-world book series (e.g., <i>Dune</i>, <i>The Expanse</i>, <i>Crescent City</i>, or <i>A Song of Ice and Fire</i>). 
                       The portal will invoke a Gemini Search engine with live Google Grounding to fetch the correct chronological timeline, sequels, and launch schedules.
                     </p>
 
-                    <form onSubmit={handleSearch} className="flex gap-2 pt-2">
+                    <form onSubmit={handleSearch} className="flex gap-2.5 pt-2">
                       <div className="relative flex-1">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 opacity-55" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-[#1A1A1A]/50 stroke-[2.5]" />
                         <input
                           type="text"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           placeholder="Search series name (e.g. Percy Jackson, The Witcher...)"
-                          className="w-full bg-[#FAF9F6] border border-[#1A1A1A] pl-10 pr-4 py-2.5 text-xs font-serif focus:outline-none"
+                          className="w-full bg-[#FFFDF3] border-2 border-[#1A1A1A] pl-11 pr-4 py-3 text-xs font-sans rounded-2xl focus:outline-none placeholder-[#1A1A1A]/40"
                         />
                       </div>
                       <button
                         type="submit"
                         disabled={isSearching || !searchQuery.trim()}
-                        className="px-5 py-2.5 bg-[#1A1A1A] text-white text-[10px] font-mono tracking-widest uppercase hover:bg-black transition-colors cursor-pointer disabled:opacity-40"
+                        className="px-6 py-3 bg-[#FF6B4A] text-white text-xs font-playful font-extrabold uppercase rounded-2xl border-2 border-[#1A1A1A] shadow-[2.5px_2.5px_0px_0px_#1A1A1A] hover:bg-[#FF5C35] hover:shadow-[3px_3px_0px_0px_#1A1A1A] transition-all cursor-pointer disabled:opacity-40"
                       >
                         {isSearching ? "Searching..." : "Search"}
                       </button>
@@ -1949,7 +1974,7 @@ export default function App() {
 
                     {/* Fast presets */}
                     <div className="flex flex-wrap items-center gap-2 pt-2">
-                      <span className="text-[9px] font-mono uppercase opacity-50">Suggestions:</span>
+                      <span className="text-[10px] font-playful font-bold uppercase text-[#1A1A1A]/50">Suggestions:</span>
                       {[
                         "A Song of Ice and Fire",
                         "Stormlight Archive",
@@ -1968,7 +1993,7 @@ export default function App() {
                               btn?.click();
                             }, 100);
                           }}
-                          className="text-[9px] font-mono text-[#1A1A1A] bg-[#EBE9E4] hover:opacity-80 px-2.5 py-1 transition-all cursor-pointer border border-[#1A1A1A]/10"
+                          className="text-[10px] font-playful font-bold text-[#1A1A1A] bg-[#FFFDF3] hover:bg-[#FFE8CC] px-3.5 py-1.5 transition-all cursor-pointer border-2 border-[#1A1A1A] rounded-xl shadow-[1px_1px_0px_0px_#1A1A1A]"
                         >
                           {term}
                         </button>
@@ -1978,27 +2003,27 @@ export default function App() {
 
                   {/* Searching progress */}
                   {isSearching && (
-                    <div className="border border-dashed border-[#1A1A1A] p-16 text-center space-y-4 bg-white">
-                      <div className="relative w-10 h-10 mx-auto">
-                        <div className="absolute inset-0 border-2 border-[#1A1A1A]/10 rounded-full" />
-                        <div className="absolute inset-0 border-2 border-t-[#1A1A1A] rounded-full animate-spin" />
+                    <div className="border-2 border-dashed border-[#1A1A1A]/50 rounded-3xl p-16 text-center space-y-4 bg-white shadow-[2px_2px_0px_0px_#1A1A1A]">
+                      <div className="relative w-12 h-12 mx-auto">
+                        <div className="absolute inset-0 border-4 border-[#1A1A1A]/10 rounded-full" />
+                        <div className="absolute inset-0 border-4 border-t-[#FF6B4A] rounded-full animate-spin" />
                       </div>
-                      <p className="font-serif italic text-sm text-[#1A1A1A]/80">
-                        Synthesizing publisher details using Gemini Live Search Grounding...
+                      <p className="font-display font-black text-base text-[#1A1A1A]">
+                        Grounding Live News Search... 🔍
                       </p>
-                      <p className="text-[9px] font-mono uppercase tracking-widest opacity-40 animate-pulse">
-                        Sifting catalogs, authors, and announcements
+                      <p className="text-[10px] font-playful uppercase tracking-wider text-[#1A1A1A]/50 animate-pulse">
+                        Scanning publishers, author blogs, and catalogs
                       </p>
                     </div>
                   )}
 
                   {/* Search error */}
                   {searchError && (
-                    <div className="bg-[#C45B31]/10 border border-[#C45B31] p-5 flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 text-[#C45B31] mt-0.5 flex-shrink-0" />
+                    <div className="bg-[#FF6B4A]/10 border-2 border-[#FF6B4A] p-5 rounded-3xl flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-[#FF6B4A] mt-0.5 flex-shrink-0" />
                       <div>
-                        <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#C45B31]">Retrieval Failure</h4>
-                        <p className="text-xs font-serif leading-relaxed text-[#C45B31] mt-1">
+                        <h4 className="text-xs font-playful font-extrabold uppercase tracking-wider text-[#FF6B4A]">Retrieval Failure</h4>
+                        <p className="text-xs font-sans leading-relaxed text-[#1A1A1A]/80 mt-1">
                           {searchError}
                         </p>
                       </div>
@@ -2010,47 +2035,47 @@ export default function App() {
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="border border-[#1A1A1A] bg-white"
+                      className="border-2 border-[#1A1A1A] bg-white rounded-3xl shadow-[4px_4px_0px_0px_#1A1A1A] overflow-hidden animate-fade-in"
                     >
                       {/* Top banner info */}
-                      <div className="p-6 md:p-8 border-b border-[#1A1A1A] flex flex-col sm:flex-row sm:items-start justify-between gap-6">
-                        <div className="space-y-1.5">
-                          <div className="flex flex-wrap items-baseline gap-2">
-                            <span className="text-[9px] font-mono tracking-widest uppercase bg-[#EBE9E4] px-1.5 py-0.5 border border-[#1A1A1A]/10">Result</span>
-                            <span className="text-xs font-serif italic opacity-60">by {searchResult.author}</span>
+                      <div className="p-6 md:p-8 border-b-2 border-[#1A1A1A] bg-[#FFFDF3]/30 flex flex-col sm:flex-row sm:items-start justify-between gap-6">
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[9px] font-playful font-extrabold tracking-widest uppercase bg-[#FFE8CC] px-2.5 py-1 border border-[#1A1A1A]/10 rounded-md">Search Result</span>
+                            <span className="text-xs font-playful font-semibold text-[#F2A359]">by {searchResult.author} ✍️</span>
                           </div>
-                          <h3 className="font-serif text-3xl font-bold tracking-tight text-[#1A1A1A]">{searchResult.title}</h3>
-                          <p className="text-xs font-serif opacity-75 max-w-2xl leading-relaxed mt-2">{searchResult.description}</p>
+                          <h3 className="font-display text-3xl font-black text-[#1A1A1A] tracking-tight">{searchResult.title}</h3>
+                          <p className="text-xs font-sans text-[#1A1A1A]/80 max-w-2xl leading-relaxed mt-2">{searchResult.description}</p>
                         </div>
 
                         <button
                           onClick={() => handleTrackSeries(searchResult)}
                           disabled={seriesList.some(s => s.title.toLowerCase() === searchResult.title.toLowerCase())}
-                          className="px-5 py-3 bg-[#1A1A1A] text-[#FAF9F6] text-[10px] font-mono tracking-widest uppercase hover:bg-black font-bold transition-all disabled:opacity-40 cursor-pointer self-start sm:self-auto flex items-center gap-1.5"
+                          className="px-6 py-3 bg-[#FF6B4A] text-[#FAF9F6] text-xs font-playful font-extrabold uppercase rounded-2xl border-2 border-[#1A1A1A] shadow-[3px_3px_0px_0px_#1A1A1A] hover:bg-[#FF5C35] hover:shadow-[4px_4px_0px_0px_#1A1A1A] transition-all disabled:opacity-40 cursor-pointer self-start sm:self-auto flex items-center gap-2"
                         >
-                          <Plus className="w-3.5 h-3.5" />
+                          <Plus className="w-4 h-4 stroke-[3]" />
                           {seriesList.some(s => s.title.toLowerCase() === searchResult.title.toLowerCase()) 
-                            ? "Tracked" 
+                            ? "Tracked ✅" 
                             : "Track Series"
                           }
                         </button>
                       </div>
 
                       {/* Split list */}
-                      <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-[#1A1A1A]">
+                      <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x-2 divide-[#1A1A1A]">
                         
                         {/* Books timeline list */}
                         <div className="lg:col-span-7 p-6 md:p-8 space-y-4">
-                          <h4 className="text-[10px] font-mono uppercase tracking-widest opacity-60">Mainline Chronological List</h4>
+                          <h4 className="text-[10px] font-playful font-bold uppercase tracking-wider text-[#1A1A1A]/50">Chronological Book Timeline 📚</h4>
                           <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                             {searchResult.books.map(b => (
-                              <div key={b.id} className="p-3 border border-[#1A1A1A]/10 bg-[#FAF9F6] flex justify-between items-center">
+                              <div key={b.id} className="p-4 border-2 border-[#1A1A1A] bg-[#FFFDF3]/30 rounded-2xl flex justify-between items-center shadow-[1px_1px_0px_0px_#1A1A1A]">
                                 <div>
-                                  <span className="text-[9px] font-mono text-[#1A1A1A]/40 block">Volume {b.volumeNumber}</span>
-                                  <span className="text-xs font-serif font-bold text-[#1A1A1A]">{b.title}</span>
+                                  <span className="text-[10px] font-playful font-bold text-[#F2A359] block">Volume {b.volumeNumber}</span>
+                                  <span className="text-xs font-sans font-bold text-[#1A1A1A]">{b.title}</span>
                                 </div>
-                                <span className="text-[9px] font-mono text-[#1A1A1A]/60 bg-[#EBE9E4] px-1.5">
-                                  Released: {b.releaseDate || "TBA"}
+                                <span className="text-[10px] font-mono font-bold text-[#1A1A1A]/60 bg-[#EBE9E4] px-2.5 py-0.5 rounded-lg border border-[#1A1A1A]/10">
+                                  {b.releaseDate || "TBA"}
                                 </span>
                               </div>
                             ))}
@@ -2058,46 +2083,46 @@ export default function App() {
                         </div>
 
                         {/* Upcoming book details */}
-                        <div className="lg:col-span-5 p-6 md:p-8 bg-[#FAF9F6] flex flex-col justify-between space-y-6">
-                          <div className="space-y-3">
-                            <h4 className="text-[10px] font-mono uppercase tracking-widest opacity-60">Announcements Scan</h4>
+                        <div className="lg:col-span-5 p-6 md:p-8 bg-[#FFFDF3]/10 flex flex-col justify-between space-y-6">
+                          <div className="space-y-4">
+                            <h4 className="text-[10px] font-playful font-bold uppercase tracking-wider text-[#1A1A1A]/50">Announcements Scan 📰</h4>
                             
                             {searchResult.upcomingBook ? (
-                              <div className="bg-[#EBE9E4] border border-[#1A1A1A] p-4 space-y-3">
-                                <div className="flex items-center gap-1.5 text-[#C45B31]">
-                                  <Sparkles className="w-4 h-4 animate-pulse" />
-                                  <span className="font-mono text-[9px] tracking-widest uppercase font-bold">Upcoming Sequel Found</span>
+                              <div className="bg-[#FFE8CC] border-2 border-[#1A1A1A] p-5 space-y-3 rounded-2xl shadow-[2px_2px_0px_0px_#1A1A1A]">
+                                <div className="flex items-center gap-1.5 text-[#FF6B4A]">
+                                  <Sparkles className="w-4 h-4 animate-bounce" />
+                                  <span className="font-playful text-[10px] tracking-wide uppercase font-bold">Upcoming Sequel Found!</span>
                                 </div>
                                 
                                 <div>
-                                  <h5 className="font-serif font-bold text-[#1A1A1A] text-sm leading-tight">
+                                  <h5 className="font-display font-extrabold text-[#1A1A1A] text-sm leading-tight">
                                     {searchResult.upcomingBook.title}
                                   </h5>
-                                  <p className="text-[11px] font-serif opacity-75 mt-1 leading-relaxed">
+                                  <p className="text-[11px] font-sans text-[#1A1A1A]/80 mt-1 leading-relaxed">
                                     {searchResult.upcomingBook.description || "Publishers are setting coordinates."}
                                   </p>
                                 </div>
 
-                                <div className="border-t border-[#1A1A1A]/10 pt-2 flex items-center justify-between text-[9px] font-mono">
+                                <div className="border-t border-[#1A1A1A]/10 pt-2 flex items-center justify-between text-[10px] font-playful font-bold">
                                   <span className="opacity-60 uppercase">Expected Release:</span>
-                                  <span className="font-bold bg-[#FAF9F6] border border-[#1A1A1A] px-1.5 py-0.5">
+                                  <span className="bg-white border-2 border-[#1A1A1A] px-2.5 py-0.5 rounded-lg shadow-[1px_1px_0px_0px_#1A1A1A]">
                                     {searchResult.upcomingBook.releaseDate}
                                   </span>
                                 </div>
                               </div>
                             ) : (
-                              <div className="border border-[#1A1A1A]/10 p-4 bg-white text-center space-y-2">
+                              <div className="border-2 border-dashed border-[#1A1A1A]/30 p-5 rounded-2xl bg-white text-center space-y-2">
                                 <AlertCircle className="w-6 h-6 opacity-40 mx-auto text-[#1A1A1A]" />
-                                <p className="font-serif text-xs">No active future launches reported.</p>
-                                <p className="text-[10px] font-serif opacity-50 max-w-xs mx-auto">
+                                <p className="font-sans font-bold text-xs text-[#1A1A1A]/70">No active future launches reported.</p>
+                                <p className="text-[10px] font-sans opacity-50 max-w-xs mx-auto">
                                   The series may be completed or no official announcements have been indexed recently.
                                 </p>
                               </div>
                             )}
                           </div>
 
-                          <div className="text-[10px] font-serif opacity-50 italic">
-                            Tip: Tracking this series subscribes you to future title changes and notifies you in the dashboard.
+                          <div className="text-[10px] font-sans opacity-50 italic">
+                            💡 Tip: Tracking this series subscribes you to future title changes and notifies you in the dashboard.
                           </div>
                         </div>
 
@@ -2117,9 +2142,9 @@ export default function App() {
                   className="space-y-6"
                 >
                   {/* Calendar intro header */}
-                  <div className="border border-[#1A1A1A] p-6 md:p-8 bg-white">
-                    <h3 className="font-serif text-3xl font-light tracking-tight">The Release Calendar</h3>
-                    <p className="text-xs font-serif opacity-75 leading-relaxed mt-2 max-w-xl">
+                  <div className="border-2 border-[#1A1A1A] p-6 md:p-8 bg-white rounded-3xl shadow-[4px_4px_0px_0px_#1A1A1A] space-y-2">
+                    <h3 className="font-display text-3xl font-black text-[#1A1A1A] tracking-tight">The Release Calendar 📅</h3>
+                    <p className="text-xs font-sans text-[#1A1A1A]/75 leading-relaxed max-w-xl">
                       Tailored arrivals list mapping scheduled releases for your tracked library items. Use the header news scanner periodically to discover newly registered dates dynamically.
                     </p>
                   </div>
@@ -2127,10 +2152,10 @@ export default function App() {
                   {/* List of arrivals */}
                   <div className="space-y-4">
                     {seriesList.filter(s => s.upcomingBook).length === 0 ? (
-                      <div className="border border-dashed border-[#1A1A1A] p-12 text-center bg-white">
+                      <div className="border-2 border-dashed border-[#1A1A1A]/30 p-12 text-center bg-white rounded-3xl shadow-[2px_2px_0px_0px_#1A1A1A]">
                         <Calendar className="w-10 h-10 mx-auto opacity-35 mb-4 text-[#1A1A1A]" />
-                        <p className="font-serif text-lg">No future launches scheduled.</p>
-                        <p className="text-xs text-[#1A1A1A]/60 font-serif mt-2 max-w-md mx-auto">
+                        <p className="font-display font-black text-lg">No future launches scheduled.</p>
+                        <p className="text-xs text-[#1A1A1A]/60 font-sans mt-2 max-w-md mx-auto leading-relaxed">
                           None of your tracked series have pending upcoming releases. Click "Scan Live News" to search the web or track new catalogs!
                         </p>
                       </div>
@@ -2144,36 +2169,36 @@ export default function App() {
                           return (
                             <div 
                               key={series.id}
-                              className="border border-[#1A1A1A] p-5 md:p-6 bg-white flex flex-col md:flex-row md:items-center justify-between gap-6"
+                              className="border-2 border-[#1A1A1A] p-6 bg-white rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-[3px_3px_0px_0px_#1A1A1A] hover:shadow-[4px_4px_0px_0px_#1A1A1A] transition-all"
                             >
                               <div className="space-y-2 flex-1">
-                                <span className="text-[9px] font-mono tracking-widest uppercase bg-[#EBE9E4] text-[#1A1A1A] px-2 py-0.5 border border-[#1A1A1A]/10 font-bold">
-                                  {series.title} by {series.author}
+                                <span className="text-[9px] font-playful font-extrabold tracking-widest uppercase bg-[#FFE8CC] text-[#1A1A1A] px-2.5 py-1 rounded-md border border-[#1A1A1A]/10">
+                                  {series.title} by {series.author} ✍️
                                 </span>
-                                <h4 className="font-serif text-2xl font-bold tracking-tight text-[#1A1A1A]">{book.title}</h4>
-                                <p className="text-xs font-serif opacity-75 max-w-2xl leading-relaxed">
+                                <h4 className="font-display text-2xl font-black tracking-tight text-[#1A1A1A] pt-1">{book.title}</h4>
+                                <p className="text-xs font-sans text-[#1A1A1A]/80 max-w-2xl leading-relaxed">
                                   {book.description || "Official plot synopses and metadata are preparing for circulation."}
                                 </p>
                               </div>
 
-                              <div className="bg-[#FAF9F6] border border-[#1A1A1A] p-4 flex flex-col items-start md:items-end justify-center min-w-[180px] flex-shrink-0">
-                                <span className="text-[9px] font-mono uppercase opacity-55">Launch Target</span>
-                                <span className="text-sm font-mono font-bold text-[#C45B31] mt-0.5">{book.releaseDate}</span>
+                              <div className="bg-[#FFFDF3] border-2 border-[#1A1A1A] p-5 rounded-2xl flex flex-col items-start md:items-end justify-center min-w-[200px] flex-shrink-0 shadow-[2px_2px_0px_0px_#1A1A1A]">
+                                <span className="text-[10px] font-playful font-bold uppercase text-[#1A1A1A]/50">Launch Target 🚀</span>
+                                <span className="text-sm font-mono font-bold text-[#FF6B4A] mt-0.5">{book.releaseDate}</span>
                                 
                                 {daysLeft !== null ? (
                                   daysLeft > 0 ? (
-                                    <span className="text-xs font-mono font-bold text-[#1A1A1A] mt-1.5 flex items-center gap-1">
-                                      <Clock className="w-3 h-3 text-[#C45B31]" />
+                                    <span className="text-xs font-playful font-extrabold text-[#1A1A1A] mt-1.5 flex items-center gap-1.5">
+                                      <Clock className="w-3.5 h-3.5 text-[#FF6B4A] animate-pulse" />
                                       T-minus {daysLeft} Days
                                     </span>
                                   ) : (
-                                    <span className="text-xs font-mono font-bold text-emerald-700 mt-1.5 flex items-center gap-1">
-                                      <Check className="w-3 h-3" />
+                                    <span className="text-xs font-playful font-extrabold text-[#4FB06D] mt-1.5 flex items-center gap-1">
+                                      <Check className="w-3.5 h-3.5 stroke-[3]" />
                                       Available Now!
                                     </span>
                                   )
                                 ) : (
-                                  <span className="text-[9px] font-mono opacity-50 mt-1.5">Day date pending</span>
+                                  <span className="text-[9px] font-playful font-bold opacity-50 mt-1.5">Day date pending</span>
                                 )}
                               </div>
                             </div>
@@ -2192,11 +2217,14 @@ export default function App() {
       </main>
 
       {/* Editorial Footer */}
-      <footer className="border-t border-[#1A1A1A] px-8 py-6 flex flex-col sm:flex-row justify-between items-center text-[9px] font-mono uppercase tracking-widest opacity-60 max-w-7xl mx-auto mt-20">
-        <div>Live Data Sync: Active (Gemini Search Grounding)</div>
-        <div className="flex space-x-6 mt-2 sm:mt-0">
-          <span>Version 2.4.0</span>
-          <span>&copy; 2026 Biblios Collective</span>
+      <footer className="border-t-2 border-[#1A1A1A]/10 px-8 py-8 flex flex-col sm:flex-row justify-between items-center text-[10px] font-playful font-extrabold uppercase tracking-wider text-[#1A1A1A]/50 max-w-7xl mx-auto mt-20">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#4FB06D] animate-ping" />
+          <span>Live Data Sync: Active (Gemini Search Grounding) 🤖</span>
+        </div>
+        <div className="flex space-x-6 mt-3 sm:mt-0">
+          <span>Version 3.0.0</span>
+          <span>&copy; 2026 Book Nerd Collective 📚</span>
         </div>
       </footer>
 
