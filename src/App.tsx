@@ -460,8 +460,8 @@ export default function App() {
         const data = await res.json();
         setSearchResult(data);
       } else {
-        const errData = await res.json();
-        setSearchError(errData.error || "Failed to retrieve grounded series.");
+        const errData = await res.json().catch(() => null);
+        setSearchError(errData?.error || `Search failed (${res.status}). Please try again.`);
       }
     } catch (err) {
       setSearchError("An error occurred connecting to the live database.");
