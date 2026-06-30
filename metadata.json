@@ -1,0 +1,6 @@
+{
+  "name": "Book Series Tracker",
+  "description": "Track your book series reading progress, find upcoming releases, and receive live title announcements powered by Gemini Search Grounding.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

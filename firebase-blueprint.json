@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "CanonicalSeries": {
+      "title": "CanonicalSeries",
+      "description": "Global, reliable, live-grounded series metadata",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "author": { "type": "string" },
+        "description": { "type": "string" },
+        "coverUrl": { "type": "string" },
+        "lastChecked": { "type": "string" },
+        "sourceUrls": { "type": "array" },
+        "confidence": { "type": "string" },
+        "lastVerifiedAt": { "type": "string" }
+      },
+      "required": ["id", "title", "author", "lastChecked"]
+    },
+    "UserSeriesProgress": {
+      "title": "UserSeriesProgress",
+      "description": "User reading history, ratings, hidden items, and manual edits/notes",
+      "type": "object",
+      "properties": {
+        "seriesId": { "type": "string" },
+        "status": { "type": "string" },
+        "rating": { "type": "number" },
+        "notes": { "type": "string" },
+        "readBookIds": { "type": "array" },
+        "hiddenBookIds": { "type": "array" },
+        "novellaBookIds": { "type": "array" },
+        "spinoffBookIds": { "type": "array" }
+      },
+      "required": ["seriesId", "status", "readBookIds", "hiddenBookIds"]
+    },
+    "ReleaseNotification": {
+      "title": "ReleaseNotification",
+      "description": "Announcements and detected book series state changes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "seriesId": { "type": "string" },
+        "seriesTitle": { "type": "string" },
+        "alertType": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "seriesId", "seriesTitle", "alertType", "title", "message", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/canonicalSeries/{seriesId}": {
+      "schema": { "$ref": "#/entities/CanonicalSeries" },
+      "description": "The global cached books and series metadata researched via live search grounding"
+    },
+    "/users/{userId}/progress/{seriesId}": {
+      "schema": { "$ref": "#/entities/UserSeriesProgress" },
+      "description": "Reading progress and custom overrides for a user"
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/ReleaseNotification" },
+      "description": "User specific release tracking notifications and countdown alerts"
+    }
+  }
+}
