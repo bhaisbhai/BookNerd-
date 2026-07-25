@@ -30,7 +30,7 @@ import {
   Info,
   Edit2
 } from "lucide-react";
-import { onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth";
+import { onAuthStateChanged, signInWithRedirect, getRedirectResult, signOut, User } from "firebase/auth";
 import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
 import { auth, googleProvider, db } from "./lib/firebase.js";
 import { TrackedSeries, CanonicalSeries, UserSeriesProgress, SearchResultSeries, ReleaseNotification, Book, UpcomingBook, ShelfBook } from "./types.js";
@@ -236,6 +236,22 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Surface errors from a just-completed Google sign-in redirect. We use signInWithRedirect
+  // rather than signInWithPopup because popup-based auth is unreliable in the wild - it fails
+  // silently as "popup-closed-by-user" under strict Cross-Origin-Opener-Policy headers or
+  // third-party-cookie-blocking browsers (Safari, Brave, privacy extensions), even though the
+  // user never closed anything. Redirect-based auth has no popup/postMessage relationship to break.
+  useEffect(() => {
+    getRedirectResult(auth).catch((err: any) => {
+      console.error("Google login error:", err);
+      if (err.code === "auth/unauthorized-domain") {
+        alert(`Google Login failed: ${window.location.hostname} is not listed as an authorized Firebase Authentication domain.`);
+      } else {
+        alert(`Google Login failed: ${err.message}`);
+      }
+    });
+  }, []);
+
   // Show migration card if guest offline data is found after login
   useEffect(() => {
     if (user && Object.keys(guestProgress).length > 0) {
@@ -393,18 +409,14 @@ export default function App() {
   }, [user, isAuthLoading, guestProgress, guestCanonical, guestNotifications, guestShelf]);
 
   const handleSignIn = async () => {
+    setShowUserDropdown(false);
     try {
-      await signInWithPopup(auth, googleProvider);
-      setShowUserDropdown(false);
+      // Navigates away to Google and back; errors from this flow surface via the
+      // getRedirectResult effect above once the page reloads, not here.
+      await signInWithRedirect(auth, googleProvider);
     } catch (err: any) {
       console.error("Google login error:", err);
-      if (err.code === "auth/popup-blocked") {
-        alert("The Google login popup was blocked by your browser. Please permit popups and redirect cookies to sign in successfully.");
-      } else if (err.code === "auth/unauthorized-domain") {
-        alert(`Google Login failed: ${window.location.hostname} is not listed as an authorized Firebase Authentication domain.`);
-      } else {
-        alert(`Google Login failed: ${err.message}`);
-      }
+      alert(`Google Login failed: ${err.message}`);
     }
   };
 
