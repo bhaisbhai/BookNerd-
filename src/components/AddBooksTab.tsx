@@ -111,9 +111,16 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
       });
 
       if (res.ok) {
-        const result: SeriesSearchResult = await res.json();
-        setSeriesResult(result);
-        setMatchedBook(findMatchingBook(result, suggestion.title));
+        const raw = await res.json();
+        // Defense-in-depth: normalize here too, even though the server guarantees this -
+        // an AI-generated response shape should never be trusted blindly on the client either.
+        const result: SeriesSearchResult = { ...raw, books: Array.isArray(raw.books) ? raw.books : [] };
+        if (result.books.length === 0) {
+          setSearchError("Couldn't find book details for that title. Try again.");
+        } else {
+          setSeriesResult(result);
+          setMatchedBook(findMatchingBook(result, suggestion.title));
+        }
       } else {
         const errData = await res.json().catch(() => null);
         setSearchError(errData?.error || "Couldn't find details for that book. Try again.");

@@ -111,19 +111,19 @@ For every book (both published and upcoming), research the level of trust and co
     }
 
     const data = JSON.parse(response.text.trim()) as SeriesSearchResult;
-    
-    // Ensure book status and unique ids are valid
-    if (data.books) {
-      data.books = data.books.map((b, idx) => ({
-        ...b,
-        id: b.id || `book-${idx + 1}`,
-        volumeNumber: b.volumeNumber || (idx + 1),
-        status: "released",
-        confidence: b.confidence || "likely",
-        sourceUrls: b.sourceUrls || ["https://openlibrary.org"],
-        lastVerifiedAt: new Date().toISOString()
-      }));
-    }
+
+    // Gemini's structured output doesn't always honor the schema's "required" fields in
+    // practice - guarantee the array exists regardless of what the model actually returned,
+    // so callers never have to guard against an undefined `books`.
+    data.books = (data.books || []).map((b, idx) => ({
+      ...b,
+      id: b.id || `book-${idx + 1}`,
+      volumeNumber: b.volumeNumber || (idx + 1),
+      status: "released",
+      confidence: b.confidence || "likely",
+      sourceUrls: b.sourceUrls || ["https://openlibrary.org"],
+      lastVerifiedAt: new Date().toISOString()
+    }));
 
     if (data.upcomingBook) {
       data.upcomingBook.confidence = data.upcomingBook.confidence || "likely";
