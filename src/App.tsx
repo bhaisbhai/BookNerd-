@@ -871,18 +871,51 @@ export default function App() {
       const series = seriesList.find(s => s.id === seriesId);
       if (!series) return;
 
-      const res = await fetch(`/api/series/${seriesId}/refresh`, {
-        method: "POST"
+      const res = await fetch("/api/refresh-series", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: series.id,
+          title: series.title,
+          author: series.author,
+          books: series.books.map(b => ({ id: b.id, title: b.title })),
+          upcomingBook: series.upcomingBook ? { title: series.upcomingBook.title } : null
+        })
       });
 
       if (res.ok) {
-        const updatedCanonical = await res.json();
+        const { canonical, hasNewAnnouncement } = await res.json();
         if (user) {
           // Write back globally verified canonical metadata
-          await setDoc(doc(db, "canonicalSeries", seriesId), updatedCanonical);
+          await setDoc(doc(db, "canonicalSeries", seriesId), canonical);
         } else {
-          setGuestCanonical(prev => ({ ...prev, [seriesId]: updatedCanonical }));
+          setGuestCanonical(prev => ({ ...prev, [seriesId]: canonical }));
         }
+
+        if (hasNewAnnouncement && canonical.upcomingBook) {
+          const notifId = `notif-${Date.now()}`;
+          const newNotif: ReleaseNotification = {
+            id: notifId,
+            seriesId,
+            seriesTitle: canonical.title,
+            bookTitle: canonical.upcomingBook.title,
+            releaseDate: canonical.upcomingBook.releaseDate,
+            alertType: "new_book_found",
+            type: "new_announcement",
+            title: "New Upcoming Title Announcement",
+            message: `"${canonical.upcomingBook.title}" by ${canonical.author} is announced for release on ${canonical.upcomingBook.releaseDate}!`,
+            createdAt: new Date().toISOString(),
+            dateAdded: new Date().toISOString(),
+            confidence: canonical.upcomingBook.confidence,
+            sourceUrls: canonical.upcomingBook.sourceUrls
+          };
+          if (user) {
+            await setDoc(doc(db, "users", user.uid, "notifications", notifId), newNotif);
+          } else {
+            setGuestNotifications(prev => [newNotif, ...prev]);
+          }
+        }
+
         alert("Series timeline verified and refreshed with live publisher catalogs!");
       } else {
         alert("Failed to fetch live updates. Using cached book coordinates.");
@@ -916,8 +949,9 @@ export default function App() {
           if (user) {
             if (data.updatedSeriesList) {
               for (const s of data.updatedSeriesList) {
-                // Save updated canonical details to global store
-                await setDoc(doc(db, "canonicalSeries", s.id), s);
+                // Only the lastChecked timestamp changed - merge it rather than overwriting the
+                // shared canonical doc with this response's per-user fields (rating/notes/read state).
+                await setDoc(doc(db, "canonicalSeries", s.id), { lastChecked: s.lastChecked }, { merge: true });
               }
             }
             if (data.newNotifications) {
@@ -929,7 +963,10 @@ export default function App() {
             // Guest mode updates
             if (data.updatedSeriesList) {
               data.updatedSeriesList.forEach((s: any) => {
-                setGuestCanonical(prev => ({ ...prev, [s.id]: s }));
+                setGuestCanonical(prev => {
+                  const existing = prev[s.id];
+                  return existing ? { ...prev, [s.id]: { ...existing, lastChecked: s.lastChecked } } : prev;
+                });
               });
             }
             if (data.newNotifications) {
