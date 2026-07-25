@@ -30,10 +30,11 @@ import {
   Info,
   Edit2
 } from "lucide-react";
-import { onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth";
+import { onAuthStateChanged, signInWithRedirect, getRedirectResult, signOut, User } from "firebase/auth";
 import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
 import { auth, googleProvider, db } from "./lib/firebase.js";
-import { TrackedSeries, CanonicalSeries, UserSeriesProgress, SearchResultSeries, ReleaseNotification, Book, UpcomingBook } from "./types.js";
+import { TrackedSeries, CanonicalSeries, UserSeriesProgress, SearchResultSeries, ReleaseNotification, Book, UpcomingBook, ShelfBook } from "./types.js";
+import ShelfTab from "./components/ShelfTab.js";
 
 // Curated demo/sample series data for one-click add recommendation panel
 const RECOMMENDED_SERIES: any[] = [
@@ -139,10 +140,11 @@ const RECOMMENDED_SERIES: any[] = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "search" | "releases">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "search" | "releases" | "shelf">("dashboard");
   const [seriesList, setSeriesList] = useState<TrackedSeries[]>([]);
   const [notifications, setNotifications] = useState<ReleaseNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [shelfBooks, setShelfBooks] = useState<ShelfBook[]>([]);
   
   // Auth state
   const [user, setUser] = useState<User | null>(null);
@@ -162,6 +164,10 @@ export default function App() {
     const saved = localStorage.getItem("biblios_guest_notifications");
     return saved ? JSON.parse(saved) : [];
   });
+  const [guestShelf, setGuestShelf] = useState<ShelfBook[]>(() => {
+    const saved = localStorage.getItem("biblios_guest_shelf");
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // Save guest details to local storage
   useEffect(() => {
@@ -175,6 +181,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("biblios_guest_notifications", JSON.stringify(guestNotifications));
   }, [guestNotifications]);
+
+  useEffect(() => {
+    localStorage.setItem("biblios_guest_shelf", JSON.stringify(guestShelf));
+  }, [guestShelf]);
 
   // Migration state
   const [showMigrationPrompt, setShowMigrationPrompt] = useState(false);
@@ -224,6 +234,22 @@ export default function App() {
       setIsAuthLoading(false);
     });
     return () => unsubscribe();
+  }, []);
+
+  // Surface errors from a just-completed Google sign-in redirect. We use signInWithRedirect
+  // rather than signInWithPopup because popup-based auth is unreliable in the wild - it fails
+  // silently as "popup-closed-by-user" under strict Cross-Origin-Opener-Policy headers or
+  // third-party-cookie-blocking browsers (Safari, Brave, privacy extensions), even though the
+  // user never closed anything. Redirect-based auth has no popup/postMessage relationship to break.
+  useEffect(() => {
+    getRedirectResult(auth).catch((err: any) => {
+      console.error("Google login error:", err);
+      if (err.code === "auth/unauthorized-domain") {
+        alert(`Google Login failed: ${window.location.hostname} is not listed as an authorized Firebase Authentication domain.`);
+      } else {
+        alert(`Google Login failed: ${err.message}`);
+      }
+    });
   }, []);
 
   // Show migration card if guest offline data is found after login
@@ -348,9 +374,23 @@ export default function App() {
         console.error("Firestore notifications read error:", err);
       });
 
+      // Observer for the user's scanned/manual "to be read" shelf
+      const shelfRef = collection(db, "users", user.uid, "shelf");
+      const unsubscribeShelf = onSnapshot(shelfRef, (snapshot) => {
+        const list: ShelfBook[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as ShelfBook);
+        });
+        list.sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
+        setShelfBooks(list);
+      }, (err) => {
+        console.error("Firestore shelf read error:", err);
+      });
+
       return () => {
         unsubscribeProgress();
         unsubscribeNotifs();
+        unsubscribeShelf();
       };
     } else {
       // Guest mode - build merged series list from local memory hooks
@@ -364,22 +404,19 @@ export default function App() {
       });
       setSeriesList(list);
       setNotifications(guestNotifications);
+      setShelfBooks(guestShelf);
     }
-  }, [user, isAuthLoading, guestProgress, guestCanonical, guestNotifications]);
+  }, [user, isAuthLoading, guestProgress, guestCanonical, guestNotifications, guestShelf]);
 
   const handleSignIn = async () => {
+    setShowUserDropdown(false);
     try {
-      await signInWithPopup(auth, googleProvider);
-      setShowUserDropdown(false);
+      // Navigates away to Google and back; errors from this flow surface via the
+      // getRedirectResult effect above once the page reloads, not here.
+      await signInWithRedirect(auth, googleProvider);
     } catch (err: any) {
       console.error("Google login error:", err);
-      if (err.code === "auth/popup-blocked") {
-        alert("The Google login popup was blocked by your browser. Please permit popups and redirect cookies to sign in successfully.");
-      } else if (err.code === "auth/unauthorized-domain") {
-        alert(`Google Login failed: ${window.location.hostname} is not listed as an authorized Firebase Authentication domain.`);
-      } else {
-        alert(`Google Login failed: ${err.message}`);
-      }
+      alert(`Google Login failed: ${err.message}`);
     }
   };
 
@@ -871,18 +908,51 @@ export default function App() {
       const series = seriesList.find(s => s.id === seriesId);
       if (!series) return;
 
-      const res = await fetch(`/api/series/${seriesId}/refresh`, {
-        method: "POST"
+      const res = await fetch("/api/refresh-series", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: series.id,
+          title: series.title,
+          author: series.author,
+          books: series.books.map(b => ({ id: b.id, title: b.title })),
+          upcomingBook: series.upcomingBook ? { title: series.upcomingBook.title } : null
+        })
       });
 
       if (res.ok) {
-        const updatedCanonical = await res.json();
+        const { canonical, hasNewAnnouncement } = await res.json();
         if (user) {
           // Write back globally verified canonical metadata
-          await setDoc(doc(db, "canonicalSeries", seriesId), updatedCanonical);
+          await setDoc(doc(db, "canonicalSeries", seriesId), canonical);
         } else {
-          setGuestCanonical(prev => ({ ...prev, [seriesId]: updatedCanonical }));
+          setGuestCanonical(prev => ({ ...prev, [seriesId]: canonical }));
         }
+
+        if (hasNewAnnouncement && canonical.upcomingBook) {
+          const notifId = `notif-${Date.now()}`;
+          const newNotif: ReleaseNotification = {
+            id: notifId,
+            seriesId,
+            seriesTitle: canonical.title,
+            bookTitle: canonical.upcomingBook.title,
+            releaseDate: canonical.upcomingBook.releaseDate,
+            alertType: "new_book_found",
+            type: "new_announcement",
+            title: "New Upcoming Title Announcement",
+            message: `"${canonical.upcomingBook.title}" by ${canonical.author} is announced for release on ${canonical.upcomingBook.releaseDate}!`,
+            createdAt: new Date().toISOString(),
+            dateAdded: new Date().toISOString(),
+            confidence: canonical.upcomingBook.confidence,
+            sourceUrls: canonical.upcomingBook.sourceUrls
+          };
+          if (user) {
+            await setDoc(doc(db, "users", user.uid, "notifications", notifId), newNotif);
+          } else {
+            setGuestNotifications(prev => [newNotif, ...prev]);
+          }
+        }
+
         alert("Series timeline verified and refreshed with live publisher catalogs!");
       } else {
         alert("Failed to fetch live updates. Using cached book coordinates.");
@@ -916,8 +986,9 @@ export default function App() {
           if (user) {
             if (data.updatedSeriesList) {
               for (const s of data.updatedSeriesList) {
-                // Save updated canonical details to global store
-                await setDoc(doc(db, "canonicalSeries", s.id), s);
+                // Only the lastChecked timestamp changed - merge it rather than overwriting the
+                // shared canonical doc with this response's per-user fields (rating/notes/read state).
+                await setDoc(doc(db, "canonicalSeries", s.id), { lastChecked: s.lastChecked }, { merge: true });
               }
             }
             if (data.newNotifications) {
@@ -929,7 +1000,10 @@ export default function App() {
             // Guest mode updates
             if (data.updatedSeriesList) {
               data.updatedSeriesList.forEach((s: any) => {
-                setGuestCanonical(prev => ({ ...prev, [s.id]: s }));
+                setGuestCanonical(prev => {
+                  const existing = prev[s.id];
+                  return existing ? { ...prev, [s.id]: { ...existing, lastChecked: s.lastChecked } } : prev;
+                });
               });
             }
             if (data.newNotifications) {
@@ -960,6 +1034,47 @@ export default function App() {
       }
     } else {
       setGuestNotifications(prev => prev.filter(n => n.id !== id));
+    }
+  };
+
+  // Shelf ("to be read" pile) handlers - covers both scanned and manually added books.
+  const handleAddShelfBooks = async (books: ShelfBook[]) => {
+    if (user) {
+      try {
+        await Promise.all(books.map(b => setDoc(doc(db, "users", user.uid, "shelf", b.id), b)));
+      } catch (e) {
+        console.error("Firestore add shelf books error:", e);
+      }
+    } else {
+      setGuestShelf(prev => [...books, ...prev]);
+    }
+  };
+
+  const handleToggleShelfBookRead = async (bookId: string) => {
+    const book = shelfBooks.find(b => b.id === bookId);
+    if (!book) return;
+    const updated = { ...book, isRead: !book.isRead };
+
+    if (user) {
+      try {
+        await setDoc(doc(db, "users", user.uid, "shelf", bookId), updated);
+      } catch (e) {
+        console.error("Firestore toggle shelf book error:", e);
+      }
+    } else {
+      setGuestShelf(prev => prev.map(b => b.id === bookId ? updated : b));
+    }
+  };
+
+  const handleDeleteShelfBook = async (bookId: string) => {
+    if (user) {
+      try {
+        await deleteDoc(doc(db, "users", user.uid, "shelf", bookId));
+      } catch (e) {
+        console.error("Firestore delete shelf book error:", e);
+      }
+    } else {
+      setGuestShelf(prev => prev.filter(b => b.id !== bookId));
     }
   };
 
@@ -996,6 +1111,11 @@ export default function App() {
   const readBooks = seriesList.reduce((acc, s) => acc + s.books.filter(b => b.isRead).length, 0);
   const activeSeriesCount = seriesList.filter(s => s.status === "reading").length;
   const upcomingSeriesCount = seriesList.filter(s => s.upcomingBook).length;
+
+  // Taste signal for shelf recommendations: series the user has rated, used to inform "what's next" picks.
+  const tasteSignals = seriesList
+    .filter(s => (s.rating || 0) > 0)
+    .map(s => ({ title: s.title, rating: s.rating || 0 }));
 
   return (
     <div className="min-h-screen bg-[#FFFDF3] text-[#1A1A1A] selection:bg-[#FFE8CC] pb-24 font-sans">
@@ -1048,6 +1168,16 @@ export default function App() {
               }`}
             >
               📅 Calendar ({upcomingSeriesCount})
+            </button>
+            <button
+              onClick={() => setActiveTab("shelf")}
+              className={`cursor-pointer transition-all px-4 py-2 rounded-full border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A] ${
+                activeTab === "shelf"
+                  ? "bg-[#4F46E5] text-white"
+                  : "bg-white text-[#1A1A1A] hover:bg-[#FFE8CC]"
+              }`}
+            >
+              🎲 Read Next
             </button>
           </nav>
 
@@ -2208,6 +2338,24 @@ export default function App() {
                         })
                     )}
                   </div>
+                </motion.div>
+              )}
+
+              {activeTab === "shelf" && (
+                <motion.div
+                  key="shelf-view"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <ShelfTab
+                    shelfBooks={shelfBooks}
+                    tasteSignals={tasteSignals}
+                    onAddBooks={handleAddShelfBooks}
+                    onToggleRead={handleToggleShelfBookRead}
+                    onDeleteBook={handleDeleteShelfBook}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>

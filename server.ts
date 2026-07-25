@@ -3,16 +3,21 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
-import { searchBookSeriesLive, checkSeriesNewsLive } from "./server/gemini.js";
+import { searchBookSeriesLive } from "./server/gemini.js";
 import { enrichBook } from "./server/metadata.js";
-import { TrackedSeries, SearchResultSeries, ReleaseNotification, Book } from "./src/types.js";
+import { refreshSeriesData } from "./server/refreshSeries.js";
+import { checkNewsForSeries, NewsCheckSeriesInput } from "./server/newsCheck.js";
+import { scanBookshelfImage } from "./server/scanShelf.js";
+import { recommendNextRead, RecommendCandidate, TasteSignal } from "./server/recommend.js";
+import { TrackedSeries, SearchResultSeries, ReleaseNotification } from "./src/types.js";
 
 dotenv.config();
 
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+// Raised from the default 100kb so bookshelf photo uploads (base64-encoded) fit.
+app.use(express.json({ limit: "10mb" }));
 
 // Ensure persistent data directory exists
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -261,91 +266,19 @@ app.post("/api/search", async (req, res) => {
   }
 });
 
-// POST refresh series to fetch the newest books & upcoming announcements
-app.post("/api/series/:id/refresh", async (req, res) => {
-  const id = req.params.id;
-  const seriesList = readJSONFile<TrackedSeries[]>(SERIES_FILE, []);
-  const index = seriesList.findIndex(s => s.id === id);
+// POST refresh a series' canonical metadata to fetch the newest books & upcoming announcements.
+// Stateless (mirrors api/refresh-series.ts for Vercel) - the caller supplies the series' current
+// title/author/books and is responsible for persisting the returned canonical data.
+app.post("/api/refresh-series", async (req, res) => {
+  const { id, title, author, books, upcomingBook } = req.body || {};
 
-  if (index === -1) {
-    return res.status(404).json({ error: "Series not found" });
+  if (typeof id !== "string" || typeof title !== "string" || typeof author !== "string" || !Array.isArray(books)) {
+    return res.status(400).json({ error: "id, title, author and books are required" });
   }
 
-  const series = seriesList[index];
-
   try {
-    // Re-query Gemini using the exact series title + author to get fresh data
-    const freshData = await searchBookSeriesLive(`${series.title} by ${series.author}`);
-
-    // Sync books
-    const updatedBooks: Book[] = [];
-    
-    // Create map of existing books to preserve 'isRead'
-    const existingBooksMap = new Map<string, Book>();
-    series.books.forEach(b => {
-      // Index by normalized title to avoid minor spelling/spacing mismatches
-      const key = b.title.toLowerCase().replace(/[^a-z0-9]+/g, "");
-      existingBooksMap.set(key, b);
-    });
-
-    freshData.books.forEach((freshBook, idx) => {
-      const key = freshBook.title.toLowerCase().replace(/[^a-z0-9]+/g, "");
-      const existing = existingBooksMap.get(key);
-      
-      if (existing) {
-        updatedBooks.push({
-          ...freshBook,
-          isRead: existing.isRead, // Preserve read status
-          id: existing.id // Keep original ID
-        });
-      } else {
-        // Newly added book in fresh data!
-        updatedBooks.push({
-          ...freshBook,
-          isRead: false // Defaults to unread
-        });
-      }
-    });
-
-    // Check if a new upcoming book announcement occurred
-    let hasNewAnnouncement = false;
-    if (freshData.upcomingBook) {
-      const oldUpcomingTitle = series.upcomingBook?.title;
-      const newUpcomingTitle = freshData.upcomingBook.title;
-      
-      if (newUpcomingTitle && oldUpcomingTitle !== newUpcomingTitle) {
-        hasNewAnnouncement = true;
-      }
-    }
-
-    const updatedSeries: TrackedSeries = {
-      ...series,
-      description: freshData.description || series.description,
-      books: updatedBooks,
-      upcomingBook: freshData.upcomingBook,
-      lastChecked: new Date().toISOString()
-    };
-
-    seriesList[index] = updatedSeries;
-    writeJSONFile(SERIES_FILE, seriesList);
-
-    // Write a notification if a new book was announced
-    if (hasNewAnnouncement && updatedSeries.upcomingBook) {
-      const notifications = readJSONFile<ReleaseNotification[]>(NOTIFICATIONS_FILE, []);
-      notifications.unshift({
-        id: `notif-${Date.now()}`,
-        seriesId: updatedSeries.id,
-        seriesTitle: updatedSeries.title,
-        bookTitle: updatedSeries.upcomingBook.title,
-        releaseDate: updatedSeries.upcomingBook.releaseDate,
-        type: "new_announcement",
-        message: `Exciting announcement! A new upcoming book "${updatedSeries.upcomingBook.title}" has been spotted for the series "${updatedSeries.title}".`,
-        dateAdded: new Date().toISOString()
-      });
-      writeJSONFile(NOTIFICATIONS_FILE, notifications);
-    }
-
-    res.json(updatedSeries);
+    const result = await refreshSeriesData({ id, title, author, books, upcomingBook: upcomingBook ?? null });
+    res.json(result);
   } catch (error) {
     console.error(`Refresh error for series ${id}:`, error);
     res.status(500).json({ error: "Failed to refresh series from search grounding." });
@@ -367,75 +300,59 @@ app.post("/api/notifications/dismiss", (req, res) => {
   res.json({ message: "Notification dismissed" });
 });
 
-// POST check news for all tracked series to discover title announcements dynamically
+// POST check news for a caller-supplied list of tracked series to discover title announcements.
+// Stateless (mirrors api/check-news.ts for Vercel) - the caller supplies its own series list and
+// existing notifications (for dedup) and is responsible for persisting the results.
 app.post("/api/check-news", async (req, res) => {
-  const { seriesList: reqSeriesList, notifications: reqNotifications } = req.body;
-  const isCustom = Array.isArray(reqSeriesList);
-  const seriesList = isCustom ? reqSeriesList : readJSONFile<TrackedSeries[]>(SERIES_FILE, []);
-  
+  const seriesList: NewsCheckSeriesInput[] = Array.isArray(req.body?.seriesList) ? req.body.seriesList : [];
+  const notifications: ReleaseNotification[] = Array.isArray(req.body?.notifications) ? req.body.notifications : [];
+
   if (seriesList.length === 0) {
     return res.json({ message: "No tracked series to check.", newsAdded: 0, updatedSeriesList: [], newNotifications: [] });
   }
 
-  let newsAdded = 0;
-  const notifications = isCustom ? (reqNotifications || []) : readJSONFile<ReleaseNotification[]>(NOTIFICATIONS_FILE, []);
-  const addedNotifications: ReleaseNotification[] = [];
+  try {
+    const result = await checkNewsForSeries(seriesList, notifications);
+    res.json({ message: "Successfully checked live announcements.", ...result });
+  } catch (error) {
+    console.error("Check-news error:", error);
+    res.status(500).json({ error: "Failed to check live announcements." });
+  }
+});
 
-  // Pick a random series to check live to avoid heavy API rate-limiting, or check all if small
-  // For the best user experience, let's check up to 2 series that haven't been checked in a while
-  const sortedByChecked = [...seriesList].sort((a, b) => new Date(a.lastChecked).getTime() - new Date(b.lastChecked).getTime());
-  const seriesToCheck = sortedByChecked.slice(0, 2);
+// POST scan a bookshelf photo and return candidate books for the user to review before adding.
+app.post("/api/scan-shelf", async (req, res) => {
+  const { image, mimeType } = req.body || {};
 
-  for (const series of seriesToCheck) {
-    const lastBook = series.books[series.books.length - 1];
-    const lastBookTitle = lastBook ? lastBook.title : "none";
-    
-    try {
-      const news = await checkSeriesNewsLive(series.title, series.author, lastBookTitle);
-      
-      if (news && news.hasNews && news.headline) {
-        // Check if we already have this notification headline
-        const duplicate = notifications.find(n => n.seriesId === series.id && n.bookTitle === news.headline);
-        if (!duplicate) {
-          const newNotif: ReleaseNotification = {
-            id: `news-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-            seriesId: series.id,
-            seriesTitle: series.title,
-            bookTitle: news.headline,
-            releaseDate: news.date || "TBA",
-            type: news.newsType === "delay" ? "release_countdown" : "new_announcement",
-            message: `${news.headline}: ${news.details}`,
-            dateAdded: new Date().toISOString()
-          };
-          notifications.unshift(newNotif);
-          addedNotifications.push(newNotif);
-          newsAdded++;
-        }
-      }
-
-      // Update lastChecked time
-      const index = seriesList.findIndex(s => s.id === series.id);
-      if (index !== -1) {
-        seriesList[index].lastChecked = new Date().toISOString();
-      }
-    } catch (e) {
-      console.error(`Error checking news for ${series.title}:`, e);
-    }
+  if (typeof image !== "string" || typeof mimeType !== "string") {
+    return res.status(400).json({ error: "image (base64) and mimeType are required" });
   }
 
-  if (!isCustom) {
-    if (newsAdded > 0) {
-      writeJSONFile(NOTIFICATIONS_FILE, notifications);
-      writeJSONFile(SERIES_FILE, seriesList);
-    }
+  try {
+    const books = await scanBookshelfImage(image, mimeType);
+    res.json({ books });
+  } catch (error) {
+    console.error("Scan-shelf error:", error);
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to scan bookshelf photo." });
+  }
+});
+
+// POST recommend the next book to read from the caller's unread shelf.
+app.post("/api/recommend", async (req, res) => {
+  const candidates: RecommendCandidate[] = Array.isArray(req.body?.candidates) ? req.body.candidates : [];
+  const tasteSignals: TasteSignal[] = Array.isArray(req.body?.tasteSignals) ? req.body.tasteSignals : [];
+
+  if (candidates.length === 0) {
+    return res.status(400).json({ error: "candidates (unread shelf books) are required" });
   }
 
-  res.json({ 
-    message: `Successfully checked live announcements.`, 
-    newsAdded,
-    updatedSeriesList: isCustom ? seriesList : undefined,
-    newNotifications: isCustom ? addedNotifications : undefined
-  });
+  try {
+    const recommendation = await recommendNextRead(candidates, tasteSignals);
+    res.json(recommendation);
+  } catch (error) {
+    console.error("Recommend error:", error);
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to generate a recommendation." });
+  }
 });
 
 // --- Front-end Integration & Vite Middleware ---
