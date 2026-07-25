@@ -33,6 +33,7 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
   const [suggestions, setSuggestions] = useState<BookSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
 
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -43,12 +44,19 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
   const [followSeries, setFollowSeries] = useState(true);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppressNextSuggestRef = useRef(false);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
+    if (suppressNextSuggestRef.current) {
+      suppressNextSuggestRef.current = false;
+      return;
+    }
+
     if (query.trim().length < 2) {
       setSuggestions([]);
+      setSuggestError(null);
       return;
     }
 
@@ -59,9 +67,18 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
         if (res.ok) {
           const data = await res.json();
           setSuggestions(data.suggestions || []);
+          setSuggestError(null);
+        } else {
+          // Don't leave a previous query's results on screen when this one failed - that
+          // reads as "no match for what I typed" rather than "search failed, try again."
+          setSuggestions([]);
+          const errData = await res.json().catch(() => null);
+          setSuggestError(errData?.error || "Search is temporarily unavailable.");
         }
       } catch (err) {
         console.error(err);
+        setSuggestions([]);
+        setSuggestError("Search is temporarily unavailable.");
       } finally {
         setIsSuggesting(false);
       }
@@ -73,8 +90,11 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
   }, [query]);
 
   const handleSelectSuggestion = async (suggestion: BookSuggestion) => {
+    suppressNextSuggestRef.current = true;
     setShowSuggestions(false);
     setQuery(suggestion.title);
+    setSuggestions([]);
+    setSuggestError(null);
     setSelectedSuggestion(suggestion);
     setSeriesResult(null);
     setMatchedBook(null);
@@ -244,10 +264,15 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
           />
         </div>
 
-        {showSuggestions && query.trim().length >= 2 && (suggestions.length > 0 || isSuggesting) && (
+        {showSuggestions && query.trim().length >= 2 && (suggestions.length > 0 || isSuggesting || suggestError) && (
           <div className="absolute left-5 right-5 mt-1.5 bg-surface border border-line rounded-xl shadow-md overflow-hidden z-10 max-h-72 overflow-y-auto">
             {isSuggesting && suggestions.length === 0 ? (
               <div className="p-4 text-xs text-ink-muted text-center">Searching...</div>
+            ) : suggestError ? (
+              <div className="p-4 flex items-start gap-2">
+                <AlertCircle className="w-3.5 h-3.5 text-danger mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-ink-muted">{suggestError}</p>
+              </div>
             ) : (
               suggestions.map((s, i) => (
                 <button
