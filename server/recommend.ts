@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
-import { ShelfRecommendation } from "../src/types.js";
+import { BookRecommendation } from "../src/types.js";
 
 dotenv.config();
 
@@ -26,16 +26,16 @@ export interface TasteSignal {
 }
 
 /**
- * Picks one book from the reader's unread shelf to read next, optionally informed by how they've
- * rated series they've already read. Falls back to a simple pick if Gemini's choice doesn't match
- * a real candidate (id hallucination) or there's nothing to reason about.
+ * Picks one book from the reader's "want to read" list to read next, optionally informed by how
+ * they've rated books they've already read. Falls back to a simple pick if Gemini's choice doesn't
+ * match a real candidate (id hallucination) or there's nothing to reason about.
  */
 export async function recommendNextRead(
   candidates: RecommendCandidate[],
   tasteSignals: TasteSignal[] = []
-): Promise<ShelfRecommendation> {
+): Promise<BookRecommendation> {
   if (candidates.length === 0) {
-    throw new Error("No unread books on the shelf to recommend from.");
+    throw new Error("No unread books in the library to recommend from.");
   }
 
   if (candidates.length === 1) {
@@ -44,7 +44,7 @@ export async function recommendNextRead(
       id: only.id,
       title: only.title,
       author: only.author,
-      reason: "It's the only unread book on your shelf right now — no decision paralysis today!"
+      reason: "It's the only unread book on your list right now — no decision paralysis today!"
     };
   }
 
@@ -53,19 +53,19 @@ export async function recommendNextRead(
     return { id: pick.id, title: pick.title, author: pick.author, reason: "Picked at random — no AI configured." };
   }
 
-  const shelfList = candidates.map(c => `- id: ${c.id} | "${c.title}" by ${c.author || "Unknown"}`).join("\n");
+  const wantToReadList = candidates.map(c => `- id: ${c.id} | "${c.title}" by ${c.author || "Unknown"}`).join("\n");
   const tasteList = tasteSignals.length > 0
     ? tasteSignals.map(t => `- "${t.title}" rated ${t.rating}/5`).join("\n")
     : "(no rating history available)";
 
   const prompt = `
-A reader can't decide what to read next. Here is their unread "to be read" shelf:
-${shelfList}
+A reader can't decide what to read next. Here is their "want to read" list:
+${wantToReadList}
 
 For taste calibration, here's what they've read and rated before (1-5 stars):
 ${tasteList}
 
-Pick exactly ONE book from the unread shelf above that they should read next. Copy its "id" value exactly as given.
+Pick exactly ONE book from the list above that they should read next. Copy its "id" value exactly as given.
 Give a short, compelling 1-2 sentence reason for this specific pick, tied to their apparent taste, mood, or a nice change of pace.
 `;
 
@@ -97,6 +97,6 @@ Give a short, compelling 1-2 sentence reason for this specific pick, tied to the
     id: chosen.id,
     title: chosen.title,
     author: chosen.author,
-    reason: data.reason || "A great next pick from your shelf."
+    reason: data.reason || "A great next pick from your list."
   };
 }

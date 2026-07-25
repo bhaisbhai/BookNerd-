@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import { enrichBook } from "./metadata.js";
-import { ShelfScanCandidate } from "../src/types.js";
+import { ScanCandidate } from "../src/types.js";
 
 dotenv.config();
 
@@ -22,7 +22,7 @@ const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // guards against pathological base64 p
  * enriches each with a best-effort cover image. Returns candidates for the user to review before
  * anything is persisted.
  */
-export async function scanBookshelfImage(imageBase64: string, mimeType: string): Promise<ShelfScanCandidate[]> {
+export async function scanBooksFromImage(imageBase64: string, mimeType: string): Promise<ScanCandidate[]> {
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY environment variable is missing.");
   }
@@ -84,7 +84,7 @@ Do not invent books that aren't visible in the photo. Skip anything you cannot r
 
   // Enrich each candidate with a cover image so the user can visually confirm matches during review.
   const enriched = await Promise.all(
-    rawCandidates.map(async (b): Promise<ShelfScanCandidate> => {
+    rawCandidates.map(async (b): Promise<ScanCandidate> => {
       const title = b.title.trim();
       const author = (b.author || "").trim();
       try {
