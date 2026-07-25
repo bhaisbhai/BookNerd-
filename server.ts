@@ -51,7 +51,7 @@ app.post("/api/search", async (req, res) => {
   }
 
   try {
-    const results = await searchBookSeriesLive(query);
+    const results = await searchBookSeriesLive(query, "quick");
 
     // Enrich with genuine metadata if cover is missing or placeholder
     if (!results.coverUrl && results.books && results.books.length > 0) {

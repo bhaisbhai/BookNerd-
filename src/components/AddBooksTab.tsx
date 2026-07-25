@@ -36,6 +36,7 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
   const [suggestError, setSuggestError] = useState<string | null>(null);
 
   const [isSearching, setIsSearching] = useState(false);
+  const [searchTakingAWhile, setSearchTakingAWhile] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedSuggestion, setSelectedSuggestion] = useState<BookSuggestion | null>(null);
   const [seriesResult, setSeriesResult] = useState<SeriesSearchResult | null>(null);
@@ -98,6 +99,11 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
     setConfirmStatus("want_to_read");
     setFollowSeries(true);
     setIsSearching(true);
+    setSearchTakingAWhile(false);
+
+    // Live web search can genuinely take a while - say so after a few seconds rather than
+    // leaving a bare "Looking up details..." that starts to look stuck.
+    const slowTimer = setTimeout(() => setSearchTakingAWhile(true), 5000);
 
     try {
       const res = await fetch("/api/search", {
@@ -125,7 +131,9 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
       console.error(err);
       setSearchError("An error occurred looking up that book.");
     } finally {
+      clearTimeout(slowTimer);
       setIsSearching(false);
+      setSearchTakingAWhile(false);
     }
   };
 
@@ -337,7 +345,9 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
 
       {isSearching && (
         <div className="bg-surface rounded-2xl border border-line shadow-sm p-6 text-center">
-          <p className="text-sm text-ink-muted">Looking up details...</p>
+          <p className="text-sm text-ink-muted">
+            {searchTakingAWhile ? "Still searching the web for verified details - this can take a bit..." : "Looking up details..."}
+          </p>
         </div>
       )}
 
