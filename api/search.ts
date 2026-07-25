@@ -27,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const results = await searchBookSeriesLive(query);
+    const results = await searchBookSeriesLive(query, "quick");
 
     if (!results.coverUrl && results.books && results.books.length > 0) {
       const firstBookTitle = results.books[0].title;

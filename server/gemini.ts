@@ -21,11 +21,30 @@ const ai = new GoogleGenAI({
 
 /**
  * Searches the web via Gemini Search Grounding for live book series data.
+ *
+ * mode "quick" skips asking the model to individually research and cite a source URL for every
+ * single book - that per-book verification instruction is what drives Gemini to run extra web
+ * searches internally, and measured live it's the dominant cost (30-45s for a query spanning
+ * several books). Used for the Add Books flow, where we only need one confirmed book plus a
+ * rough series shape. mode "full" (the default) keeps the thorough per-book verification, used
+ * when explicitly refreshing/following a series where sourced accuracy actually matters more
+ * than speed.
  */
-export async function searchBookSeriesLive(query: string): Promise<SeriesSearchResult> {
+export async function searchBookSeriesLive(query: string, mode: "quick" | "full" = "full"): Promise<SeriesSearchResult> {
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY environment variable is missing.");
   }
+
+  const verificationInstruction = mode === "full"
+    ? `
+For every book (both published and upcoming), research the level of trust and confidence and locate real source URLs (author blogs, publisher catalogs, major booksellers, public catalogs):
+- confidence: "confirmed" (publisher confirmed date), "likely" (seen on reputable booksellers/catalogs), "rumoured" (community speculation/unverified), or "unknown".
+- sourceUrls: List the actual URLs/websites found verifying this book's release.
+- lastVerifiedAt: Set this to the current date/timestamp.
+`
+    : `
+Do not spend time individually verifying or sourcing every single book - a best-effort confidence guess per book is fine. Prioritize speed: answer from what you already know plus a single check of the most relevant result, rather than searching separately for each book.
+`;
 
   const prompt = `
 Search the web for up-to-date, live, accurate data about the book series matching this query: "${query}".
@@ -36,12 +55,7 @@ You need to extract:
 3. A short, compelling 1-2 sentence description of the series.
 4. A chronological list of the main, mainline novels/volumes published in the series in correct reading order. Include their volume number (starting from 1), title, and publication/release date.
 5. Critical: Search for any upcoming book, recently announced book, or next volume in development for this series. If the author has announced a new book, or if there is a book with a scheduled release date (e.g. in late 2026, 2027, or TBA), extract its title, expected release date, and a brief description. If no upcoming book is announced or scheduled, do not include the upcomingBook field (or set it to null).
-
-For every book (both published and upcoming), research the level of trust and confidence and locate real source URLs (author blogs, publisher catalogs, major booksellers, public catalogs):
-- confidence: "confirmed" (publisher confirmed date), "likely" (seen on reputable booksellers/catalogs), "rumoured" (community speculation/unverified), or "unknown".
-- sourceUrls: List the actual URLs/websites found verifying this book's release.
-- lastVerifiedAt: Set this to the current date/timestamp.
-`;
+${verificationInstruction}`;
 
   try {
     const response = await ai.models.generateContent({
