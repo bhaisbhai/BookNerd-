@@ -3,6 +3,7 @@ import { BookOpen, Search, Calendar, Bell, X, LogOut, ChevronDown } from "lucide
 import { onAuthStateChanged, signInWithRedirect, getRedirectResult, signOut, User } from "firebase/auth";
 import { collection, doc, getDoc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
 import { auth, googleProvider, db } from "./lib/firebase.js";
+import { stripUndefined } from "./lib/firestoreUtils.js";
 import { LibraryBook, FollowedSeries, UserSeriesFollow, ReleaseNotification } from "./types.js";
 import LibraryTab from "./components/LibraryTab.js";
 import AddBooksTab from "./components/AddBooksTab.js";
@@ -140,14 +141,14 @@ export default function App() {
     if (!user) return;
     setIsMigrating(true);
     try {
-      await Promise.all(guestLibrary.map(b => setDoc(doc(db, "users", user.uid, "library", b.id), b)));
+      await Promise.all(guestLibrary.map(b => setDoc(doc(db, "users", user.uid, "library", b.id), stripUndefined(b))));
       for (const series of Object.values(guestFollowedSeries)) {
-        await setDoc(doc(db, "canonicalSeries", series.id), series);
+        await setDoc(doc(db, "canonicalSeries", series.id), stripUndefined(series));
       }
       await Promise.all(
-        Object.values(guestUserFollows).map(f => setDoc(doc(db, "users", user.uid, "followedSeries", f.seriesId), f))
+        Object.values(guestUserFollows).map(f => setDoc(doc(db, "users", user.uid, "followedSeries", f.seriesId), stripUndefined(f)))
       );
-      await Promise.all(guestNotifications.map(n => setDoc(doc(db, "users", user.uid, "notifications", n.id), n)));
+      await Promise.all(guestNotifications.map(n => setDoc(doc(db, "users", user.uid, "notifications", n.id), stripUndefined(n))));
 
       setGuestLibrary([]);
       setGuestFollowedSeries({});
@@ -173,9 +174,10 @@ export default function App() {
   const handleAddLibraryBooks = async (books: LibraryBook[]) => {
     if (user) {
       try {
-        await Promise.all(books.map(b => setDoc(doc(db, "users", user.uid, "library", b.id), b)));
+        await Promise.all(books.map(b => setDoc(doc(db, "users", user.uid, "library", b.id), stripUndefined(b))));
       } catch (e) {
         console.error("Firestore add library books error:", e);
+        alert("Couldn't save that to your library. Please try again.");
       }
     } else {
       setGuestLibrary(prev => [...books, ...prev]);
@@ -185,9 +187,10 @@ export default function App() {
   const handleUpdateLibraryBook = async (id: string, patch: Partial<LibraryBook>) => {
     if (user) {
       try {
-        await setDoc(doc(db, "users", user.uid, "library", id), patch, { merge: true });
+        await setDoc(doc(db, "users", user.uid, "library", id), stripUndefined(patch), { merge: true });
       } catch (e) {
         console.error("Firestore update library book error:", e);
+        alert("Couldn't save that change. Please try again.");
       }
     } else {
       setGuestLibrary(prev => prev.map(b => b.id === id ? { ...b, ...patch } : b));
@@ -210,10 +213,11 @@ export default function App() {
     const follow: UserSeriesFollow = { seriesId: series.id, followedAt: new Date().toISOString() };
     if (user) {
       try {
-        await setDoc(doc(db, "canonicalSeries", series.id), series);
-        await setDoc(doc(db, "users", user.uid, "followedSeries", series.id), follow, { merge: true });
+        await setDoc(doc(db, "canonicalSeries", series.id), stripUndefined(series));
+        await setDoc(doc(db, "users", user.uid, "followedSeries", series.id), stripUndefined(follow), { merge: true });
       } catch (e) {
         console.error("Firestore follow series error:", e);
+        alert("Couldn't follow that series. Please try again.");
       }
     } else {
       setGuestFollowedSeries(prev => ({ ...prev, [series.id]: series }));
@@ -265,7 +269,7 @@ export default function App() {
               await setDoc(doc(db, "canonicalSeries", s.id), { lastChecked: s.lastChecked }, { merge: true });
             }
             for (const n of data.newNotifications || []) {
-              await setDoc(doc(db, "users", user.uid, "notifications", n.id), n);
+              await setDoc(doc(db, "users", user.uid, "notifications", n.id), stripUndefined(n));
             }
           } else {
             for (const s of data.updatedSeriesList || []) {
