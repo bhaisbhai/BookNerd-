@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Search, Camera, Check, X, BookOpen, AlertCircle } from "lucide-react";
 import { LibraryBook, BookSuggestion, SeriesSearchResult, SeriesBook, FollowedSeries, ScanCandidate } from "../types.js";
 import { fileToResizedBase64 } from "../lib/imageUtils.js";
+import { slugify, normalize, findMatchingBook } from "../lib/bookMatching.js";
 
 interface AddBooksTabProps {
   libraryBooks: LibraryBook[];
@@ -11,19 +12,6 @@ interface AddBooksTabProps {
 
 interface ReviewCandidate extends ScanCandidate {
   include: boolean;
-}
-
-function slugify(title: string) {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
-
-function normalize(title: string) {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, "");
-}
-
-function findMatchingBook(result: SeriesSearchResult, queryTitle: string): SeriesBook | null {
-  const target = normalize(queryTitle);
-  return result.books.find(b => normalize(b.title) === target) || result.books[0] || null;
 }
 
 type ConfirmStatus = "want_to_read" | "reading" | "read";
@@ -37,6 +25,21 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
 
   const [isSearching, setIsSearching] = useState(false);
   const [searchTakingAWhile, setSearchTakingAWhile] = useState(false);
+  const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
+  const confirmationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showConfirmation = (message: string) => {
+    if (confirmationTimerRef.current) clearTimeout(confirmationTimerRef.current);
+    setConfirmationMessage(message);
+    confirmationTimerRef.current = setTimeout(() => setConfirmationMessage(null), 3000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (confirmationTimerRef.current) clearTimeout(confirmationTimerRef.current);
+    };
+  }, []);
+
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedSuggestion, setSelectedSuggestion] = useState<BookSuggestion | null>(null);
   const [seriesResult, setSeriesResult] = useState<SeriesSearchResult | null>(null);
@@ -206,6 +209,7 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
       onFollowSeries(followed);
     }
 
+    showConfirmation(`Added "${book.title}" to your library${seriesId && followSeries ? ` and followed ${seriesResult.title}` : ""}`);
     resetSearch();
   };
 
@@ -280,12 +284,22 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
         source: "scanned" as const
       }));
 
-    if (newBooks.length > 0) onAddBooks(newBooks);
+    if (newBooks.length > 0) {
+      onAddBooks(newBooks);
+      showConfirmation(`Added ${newBooks.length} book${newBooks.length === 1 ? "" : "s"} to your library`);
+    }
     setReviewCandidates(null);
   };
 
   return (
     <div className="space-y-6">
+      {confirmationMessage && (
+        <div className="bg-success/10 border border-success/20 rounded-2xl px-4 py-3 flex items-center gap-2.5">
+          <Check className="w-4 h-4 text-success flex-shrink-0" strokeWidth={2.5} />
+          <p className="text-sm text-ink">{confirmationMessage}</p>
+        </div>
+      )}
+
       {/* Search */}
       <div className="bg-surface rounded-2xl border border-line shadow-sm p-5 relative">
         <form onSubmit={handleDirectSearch} className="relative flex gap-2">
