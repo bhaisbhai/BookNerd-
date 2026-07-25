@@ -76,6 +76,32 @@ export interface SearchResultSeries {
   lastVerifiedAt?: string;
 }
 
+// A single book detected from a bookshelf photo scan, pending user review before it's added.
+export interface ShelfScanCandidate {
+  title: string;
+  author: string;
+  coverUrl?: string;
+}
+
+// A book the user owns/wants to read, tracked independently of any series ("to-be-read pile").
+export interface ShelfBook {
+  id: string;
+  title: string;
+  author: string;
+  coverUrl?: string;
+  isRead: boolean;
+  addedAt: string; // ISO string
+  source: "scanned" | "manual";
+}
+
+// Result of asking for a "what should I read next" recommendation from the shelf.
+export interface ShelfRecommendation {
+  id: string; // matches a ShelfBook id
+  title: string;
+  author: string;
+  reason: string;
+}
+
 export interface ReleaseNotification {
   id: string;
   seriesId: string;
