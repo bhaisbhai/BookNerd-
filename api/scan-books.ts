@@ -1,4 +1,4 @@
-import { scanBookshelfImage } from "../server/scanShelf.js";
+import { scanBooksFromImage } from "../server/scanBooks.js";
 
 type VercelRequest = {
   method?: string;
@@ -26,10 +26,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const books = await scanBookshelfImage(image, mimeType);
+    const books = await scanBooksFromImage(image, mimeType);
     return res.status(200).json({ books });
   } catch (error) {
-    console.error("Scan-shelf API Error:", error);
+    console.error("Scan-books API Error:", error);
     return res.status(500).json({
       error: error instanceof Error ? error.message : "Failed to scan bookshelf photo."
     });

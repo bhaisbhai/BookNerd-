@@ -1,5 +1,5 @@
 import { searchBookSeriesLive } from "./gemini.js";
-import { CanonicalSeries, Book } from "../src/types.js";
+import { FollowedSeries, SeriesBook } from "../src/types.js";
 
 export interface RefreshSeriesInput {
   id: string;
@@ -10,7 +10,7 @@ export interface RefreshSeriesInput {
 }
 
 export interface RefreshSeriesResult {
-  canonical: CanonicalSeries;
+  canonical: FollowedSeries;
   hasNewAnnouncement: boolean;
 }
 
@@ -28,7 +28,7 @@ export async function refreshSeriesData(input: RefreshSeriesInput): Promise<Refr
     existingIdByKey.set(key, b.id);
   });
 
-  const books: Omit<Book, "isRead">[] = (freshData.books || []).map((freshBook, idx) => {
+  const books: SeriesBook[] = (freshData.books || []).map((freshBook, idx) => {
     const key = freshBook.title.toLowerCase().replace(/[^a-z0-9]+/g, "");
     const existingId = existingIdByKey.get(key);
     return {
@@ -41,7 +41,7 @@ export async function refreshSeriesData(input: RefreshSeriesInput): Promise<Refr
   const newUpcomingTitle = freshData.upcomingBook?.title;
   const hasNewAnnouncement = Boolean(newUpcomingTitle && newUpcomingTitle !== oldUpcomingTitle);
 
-  const canonical: CanonicalSeries = {
+  const canonical: FollowedSeries = {
     id: input.id,
     title: input.title,
     author: input.author,

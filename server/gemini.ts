@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
-import { SearchResultSeries } from "../src/types.js";
+import { SeriesSearchResult } from "../src/types.js";
 
 dotenv.config();
 
@@ -22,7 +22,7 @@ const ai = new GoogleGenAI({
 /**
  * Searches the web via Gemini Search Grounding for live book series data.
  */
-export async function searchBookSeriesLive(query: string): Promise<SearchResultSeries> {
+export async function searchBookSeriesLive(query: string): Promise<SeriesSearchResult> {
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY environment variable is missing.");
   }
@@ -110,7 +110,7 @@ For every book (both published and upcoming), research the level of trust and co
       throw new Error("No response content received from Gemini.");
     }
 
-    const data = JSON.parse(response.text.trim()) as SearchResultSeries;
+    const data = JSON.parse(response.text.trim()) as SeriesSearchResult;
     
     // Ensure book status and unique ids are valid
     if (data.books) {
