@@ -89,13 +89,9 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
     };
   }, [query]);
 
-  const handleSelectSuggestion = async (suggestion: BookSuggestion) => {
-    suppressNextSuggestRef.current = true;
-    setShowSuggestions(false);
-    setQuery(suggestion.title);
-    setSuggestions([]);
-    setSuggestError(null);
-    setSelectedSuggestion(suggestion);
+  // Shared by both paths into a lookup: picking a suggestion, and typing a full title and
+  // hitting Enter directly (which doesn't depend on the suggestions API working at all).
+  const runSearch = async (searchQuery: string, matchTitle: string) => {
     setSeriesResult(null);
     setMatchedBook(null);
     setSearchError(null);
@@ -107,7 +103,7 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
       const res = await fetch("/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: `${suggestion.title} by ${suggestion.author}` })
+        body: JSON.stringify({ query: searchQuery })
       });
 
       if (res.ok) {
@@ -119,7 +115,7 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
           setSearchError("Couldn't find book details for that title. Try again.");
         } else {
           setSeriesResult(result);
-          setMatchedBook(findMatchingBook(result, suggestion.title));
+          setMatchedBook(findMatchingBook(result, matchTitle));
         }
       } else {
         const errData = await res.json().catch(() => null);
@@ -131,6 +127,31 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const handleSelectSuggestion = (suggestion: BookSuggestion) => {
+    suppressNextSuggestRef.current = true;
+    setShowSuggestions(false);
+    setQuery(suggestion.title);
+    setSuggestions([]);
+    setSuggestError(null);
+    setSelectedSuggestion(suggestion);
+    runSearch(`${suggestion.title} by ${suggestion.author}`, suggestion.title);
+  };
+
+  // Fallback for when you already know exactly what you want and don't want to wait on (or
+  // depend on) the instant-suggestions API - just type the full title and press Enter.
+  const handleDirectSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const typed = query.trim();
+    if (!typed || isSearching) return;
+
+    suppressNextSuggestRef.current = true;
+    setShowSuggestions(false);
+    setSuggestions([]);
+    setSuggestError(null);
+    setSelectedSuggestion({ title: typed, author: "" });
+    runSearch(typed, typed);
   };
 
   const isAlreadyInLibrary = (title: string, author: string) => {
@@ -259,26 +280,35 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
     <div className="space-y-6">
       {/* Search */}
       <div className="bg-surface rounded-2xl border border-line shadow-sm p-5 relative">
-        <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" strokeWidth={2} />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => { setQuery(e.target.value); setShowSuggestions(true); }}
-            onFocus={() => setShowSuggestions(true)}
-            placeholder="Search for a book..."
-            className="w-full bg-app-bg border border-line pl-10 pr-4 py-2.5 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/30 placeholder-ink-muted"
-          />
-        </div>
+        <form onSubmit={handleDirectSearch} className="relative flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" strokeWidth={2} />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); setShowSuggestions(true); }}
+              onFocus={() => setShowSuggestions(true)}
+              placeholder="Search for a book, or type the full title and press Enter..."
+              className="w-full bg-app-bg border border-line pl-10 pr-4 py-2.5 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/30 placeholder-ink-muted"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={!query.trim() || isSearching}
+            className="px-4 py-2.5 bg-ink text-white text-xs font-medium rounded-xl hover:opacity-85 transition-opacity cursor-pointer disabled:opacity-40 flex-shrink-0"
+          >
+            Search
+          </button>
+        </form>
 
         {showSuggestions && query.trim().length >= 2 && (suggestions.length > 0 || isSuggesting || suggestError) && (
-          <div className="absolute left-5 right-5 mt-1.5 bg-surface border border-line rounded-xl shadow-md overflow-hidden z-10 max-h-72 overflow-y-auto">
+          <div className="absolute left-5 right-[5.5rem] mt-1.5 bg-surface border border-line rounded-xl shadow-md overflow-hidden z-10 max-h-72 overflow-y-auto">
             {isSuggesting && suggestions.length === 0 ? (
               <div className="p-4 text-xs text-ink-muted text-center">Searching...</div>
             ) : suggestError ? (
               <div className="p-4 flex items-start gap-2">
                 <AlertCircle className="w-3.5 h-3.5 text-danger mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-ink-muted">{suggestError}</p>
+                <p className="text-xs text-ink-muted">{suggestError} Press Enter to search directly instead.</p>
               </div>
             ) : (
               suggestions.map((s, i) => (
