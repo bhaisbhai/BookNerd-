@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { RefreshCw, ChevronDown, ChevronUp, Check, Clock, X, Calendar } from "lucide-react";
+import { RefreshCw, ChevronDown, ChevronUp, Check, Clock, X, Calendar, BookMarked } from "lucide-react";
 import { FollowedSeries, UserSeriesFollow, LibraryBook } from "../types.js";
+import { getNextToRead } from "../lib/seriesProgress.js";
 
 interface SeriesTabProps {
   followedSeries: FollowedSeries[];
@@ -56,6 +57,7 @@ export default function SeriesTab({ followedSeries, userFollows, libraryBooks, o
             const readCount = seriesBooks.filter(b => b.status === "read").length;
             const isExpanded = expandedId === series.id;
             const daysLeft = getDaysUntilRelease(series.upcomingBook?.releaseDate);
+            const nextToRead = getNextToRead(series, libraryBooks);
 
             return (
               <div key={series.id} className="bg-surface rounded-2xl border border-line shadow-sm overflow-hidden">
@@ -92,6 +94,11 @@ export default function SeriesTab({ followedSeries, userFollows, libraryBooks, o
                             </span>
                             <span className="text-ink-muted">Vol. {b.volumeNumber}</span>
                             <span className="text-ink font-medium truncate">{b.title}</span>
+                            {nextToRead?.id === b.id && (
+                              <span className="flex items-center gap-1 text-[10px] font-medium text-accent bg-accent/10 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                                <BookMarked className="w-2.5 h-2.5" /> Next up
+                              </span>
+                            )}
                             <span className="text-ink-muted/60 ml-auto whitespace-nowrap">{b.releaseDate || "TBA"}</span>
                           </div>
                         );

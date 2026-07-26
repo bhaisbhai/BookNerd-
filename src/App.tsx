@@ -461,7 +461,14 @@ export default function App() {
         )}
 
         {activeTab === "library" && (
-          <LibraryTab libraryBooks={libraryBooks} onUpdateBook={handleUpdateLibraryBook} onDeleteBook={handleDeleteLibraryBook} />
+          <LibraryTab
+            libraryBooks={libraryBooks}
+            followedSeries={followedSeries}
+            onUpdateBook={handleUpdateLibraryBook}
+            onDeleteBook={handleDeleteLibraryBook}
+            onAddBooks={handleAddLibraryBooks}
+            onFollowSeries={handleFollowSeries}
+          />
         )}
         {activeTab === "add" && (
           <AddBooksTab libraryBooks={libraryBooks} onAddBooks={handleAddLibraryBooks} onFollowSeries={handleFollowSeries} />
