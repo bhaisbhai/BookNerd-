@@ -11,6 +11,7 @@ import { scanBooksFromImage } from "./server/scanBooks.js";
 import { parseBooksFromText } from "./server/parseBooksText.js";
 import { recommendNextRead, RecommendCandidate, TasteSignal } from "./server/recommend.js";
 import { lookupByIsbn } from "./server/isbnLookup.js";
+import { findMatchingBook } from "./src/lib/bookMatching.js";
 import { ReleaseNotification } from "./src/types.js";
 
 dotenv.config();
@@ -66,7 +67,7 @@ app.get("/api/lookup-isbn", async (req, res) => {
 
 // POST search live book/series data via Gemini once a suggestion is chosen or a search is committed to.
 app.post("/api/search", async (req, res) => {
-  const { query } = req.body;
+  const { query, matchTitle } = req.body;
   if (!query || typeof query !== "string") {
     return res.status(400).json({ error: "Search query string is required" });
   }
@@ -74,11 +75,18 @@ app.post("/api/search", async (req, res) => {
   try {
     const results = await searchBookSeriesLive(query, "quick");
 
-    // Each book gets its own cover/synopsis/rating - never reuse one book's metadata for another.
+    // Enrich only the specific book being added, not every book in the series - enriching all of
+    // them eagerly on every search meant a multi-book series paid for N enrichment round-trips
+    // (Google Books/Open Library calls) on a request that only needs one book's metadata right
+    // now. The rest of the series still gets a reasonable series-level cover fallback.
     if (results.books && results.books.length > 0) {
-      results.books = await enrichSeriesBooks(results.books, results.author);
+      const target = findMatchingBook(results, typeof matchTitle === "string" && matchTitle ? matchTitle : query);
+      if (target) {
+        const [enriched] = await enrichSeriesBooks([target], results.author);
+        results.books = results.books.map(b => b.id === enriched.id ? enriched : b);
+      }
       if (!results.coverUrl) {
-        results.coverUrl = results.books[0]?.coverUrl;
+        results.coverUrl = results.books.find(b => b.coverUrl)?.coverUrl;
       }
     }
 
