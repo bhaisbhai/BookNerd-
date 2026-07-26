@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Search, Camera, Check, X, BookOpen, AlertCircle } from "lucide-react";
+import { Search, Camera, Check, X, BookOpen, AlertCircle, Barcode } from "lucide-react";
 import { LibraryBook, BookSuggestion, SeriesSearchResult, SeriesBook, FollowedSeries, ScanCandidate } from "../types.js";
 import { fileToResizedBase64 } from "../lib/imageUtils.js";
 import { slugify, normalize, findMatchingBook } from "../lib/bookMatching.js";
+import BarcodeScanner from "./BarcodeScanner.js";
 
 interface AddBooksTabProps {
   libraryBooks: LibraryBook[];
@@ -148,6 +149,35 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
     setSuggestError(null);
     setSelectedSuggestion(suggestion);
     runSearch(`${suggestion.title} by ${suggestion.author}`, suggestion.title);
+  };
+
+  // --- Barcode scan flow ---
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [isLookingUpBarcode, setIsLookingUpBarcode] = useState(false);
+  const [barcodeError, setBarcodeError] = useState<string | null>(null);
+
+  const handleBarcodeDetected = async (isbn: string) => {
+    setShowBarcodeScanner(false);
+    setIsLookingUpBarcode(true);
+    setBarcodeError(null);
+
+    try {
+      const res = await fetch(`/api/lookup-isbn?isbn=${encodeURIComponent(isbn)}`);
+      if (res.ok) {
+        const book: BookSuggestion = await res.json();
+        // ISBN lookup gives us a precise, confirmed title/author - feed it into the same flow as
+        // picking a suggestion, so it goes through the existing series-detection confirm panel.
+        handleSelectSuggestion(book);
+      } else {
+        const errData = await res.json().catch(() => null);
+        setBarcodeError(errData?.error || "Couldn't find a book for that barcode.");
+      }
+    } catch (err) {
+      console.error(err);
+      setBarcodeError("An error occurred looking up that barcode.");
+    } finally {
+      setIsLookingUpBarcode(false);
+    }
   };
 
   // Fallback for when you already know exactly what you want and don't want to wait on (or
@@ -451,9 +481,9 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
       <div className="bg-surface rounded-2xl border border-line shadow-sm p-5 space-y-3">
         <div className="flex items-center gap-2">
           <Camera className="w-4 h-4 text-ink-muted" strokeWidth={2} />
-          <p className="text-sm font-medium text-ink">Scan a photo of your shelf</p>
+          <p className="text-sm font-medium text-ink">Scan a photo or screenshot</p>
         </div>
-        <p className="text-xs text-ink-muted">Snap a photo of a bookshelf or stack - we'll identify the titles and let you review them before adding.</p>
+        <p className="text-xs text-ink-muted">A bookshelf, a single book's cover, or a screenshot from Goodreads or similar - we'll identify the titles and let you review them before adding.</p>
 
         <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
         <button
@@ -471,6 +501,34 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
           </div>
         )}
       </div>
+
+      {/* Scan a barcode */}
+      <div className="bg-surface rounded-2xl border border-line shadow-sm p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <Barcode className="w-4 h-4 text-ink-muted" strokeWidth={2} />
+          <p className="text-sm font-medium text-ink">Scan a barcode</p>
+        </div>
+        <p className="text-xs text-ink-muted">Point your camera at the barcode on the back of the book for an exact match.</p>
+
+        <button
+          onClick={() => { setBarcodeError(null); setShowBarcodeScanner(true); }}
+          disabled={isLookingUpBarcode}
+          className="px-4 py-2 bg-app-bg text-ink text-xs font-medium rounded-lg hover:bg-line transition-colors cursor-pointer disabled:opacity-40"
+        >
+          {isLookingUpBarcode ? "Looking up..." : "Scan Barcode"}
+        </button>
+
+        {barcodeError && (
+          <div className="flex items-start gap-2 pt-1">
+            <AlertCircle className="w-3.5 h-3.5 text-danger mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-ink-muted">{barcodeError}</p>
+          </div>
+        )}
+      </div>
+
+      {showBarcodeScanner && (
+        <BarcodeScanner onDetected={handleBarcodeDetected} onClose={() => setShowBarcodeScanner(false)} />
+      )}
 
       {reviewCandidates && (
         <div className="bg-surface rounded-2xl border border-line shadow-sm overflow-hidden">

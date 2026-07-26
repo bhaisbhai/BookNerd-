@@ -18,9 +18,11 @@ const ai = new GoogleGenAI({
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // guards against pathological base64 payloads before they hit Gemini
 
 /**
- * Identifies individual books visible in a photo of a bookshelf/stack (spines or covers) and
- * enriches each with a best-effort cover image. Returns candidates for the user to review before
- * anything is persisted.
+ * Identifies individual books from an image and enriches each with a best-effort cover image.
+ * Returns candidates for the user to review before anything is persisted. Handles three kinds of
+ * input equally well: a photo of a bookshelf/stack/pile, a photo of a single book's cover or
+ * spine, and a screenshot from a book-tracking app or website (e.g. Goodreads) showing a shelf,
+ * list, or detail page - which needs reading on-screen text/UI labels rather than physical spines.
  */
 export async function scanBooksFromImage(imageBase64: string, mimeType: string): Promise<ScanCandidate[]> {
   if (!apiKey) {
@@ -34,11 +36,14 @@ export async function scanBooksFromImage(imageBase64: string, mimeType: string):
   }
 
   const prompt = `
-You are looking at a photo of a bookshelf, book stack, or pile of books.
-Identify every distinct book you can make out from the visible spines or covers.
-Use your general knowledge of book titles/authors to correct likely misreads of partial or angled text.
+This image is one of: a photo of a bookshelf, book stack, or pile of books; a photo of a single book's cover or spine; or a screenshot from a book-tracking app or website (e.g. Goodreads, StoryGraph, a library catalogue, an online bookstore) showing a shelf, list, or detail page for one or more books.
+
+Identify every distinct book present:
+- If it's a photo of physical books, read the visible spines or covers. Use your general knowledge of book titles/authors to correct likely misreads of partial or angled text.
+- If it's a screenshot of an app/website, read the on-screen text (titles, author names, list rows) rather than looking for physical spines.
+
 Only include a book if you're reasonably confident of at least its title. If you can't determine the author, return an empty string for author.
-Do not invent books that aren't visible in the photo. Skip anything you cannot read at all.
+Do not invent books that aren't actually present in the image. Skip anything you cannot read at all.
 `;
 
   const response = await ai.models.generateContent({
