@@ -212,7 +212,7 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
       id: `book-${slugify(matchedBook.title)}-${Date.now()}`,
       title: matchedBook.title,
       author: seriesResult.author,
-      coverUrl: seriesResult.coverUrl || selectedSuggestion.coverUrl,
+      coverUrl: matchedBook.coverUrl || seriesResult.coverUrl || selectedSuggestion.coverUrl,
       status: confirmStatus,
       addedAt: now,
       finishedAt: confirmStatus === "read" ? now : undefined,
@@ -406,8 +406,8 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
         <div className="bg-surface rounded-2xl border border-line shadow-sm overflow-hidden">
           <div className="p-5 flex gap-4">
             <div className="w-16 h-24 flex-shrink-0 bg-app-bg rounded-lg overflow-hidden flex items-center justify-center">
-              {(seriesResult.coverUrl || selectedSuggestion.coverUrl) ? (
-                <img src={seriesResult.coverUrl || selectedSuggestion.coverUrl} alt={matchedBook.title} className="w-full h-full object-cover" />
+              {(matchedBook.coverUrl || seriesResult.coverUrl || selectedSuggestion.coverUrl) ? (
+                <img src={matchedBook.coverUrl || seriesResult.coverUrl || selectedSuggestion.coverUrl} alt={matchedBook.title} className="w-full h-full object-cover" />
               ) : (
                 <BookOpen className="w-6 h-6 text-ink-muted/40" strokeWidth={1.75} />
               )}
@@ -418,7 +418,7 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
               {isAlreadyInLibrary(matchedBook.title, seriesResult.author) && (
                 <p className="text-xs text-accent font-medium">Already in your library</p>
               )}
-              <p className="text-xs text-ink-muted leading-relaxed line-clamp-2">{seriesResult.description}</p>
+              <p className="text-xs text-ink-muted leading-relaxed line-clamp-2">{matchedBook.description || seriesResult.description}</p>
             </div>
           </div>
 
