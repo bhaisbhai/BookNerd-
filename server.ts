@@ -9,6 +9,7 @@ import { refreshSeriesData } from "./server/refreshSeries.js";
 import { checkNewsForSeries, NewsCheckSeriesInput } from "./server/newsCheck.js";
 import { scanBooksFromImage } from "./server/scanBooks.js";
 import { recommendNextRead, RecommendCandidate, TasteSignal } from "./server/recommend.js";
+import { lookupByIsbn } from "./server/isbnLookup.js";
 import { ReleaseNotification } from "./src/types.js";
 
 dotenv.config();
@@ -40,6 +41,25 @@ app.get("/api/suggest", async (req, res) => {
   } catch (error) {
     console.error("Suggest error:", error);
     res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch book suggestions." });
+  }
+});
+
+// GET look up a book directly by ISBN (decoded from a barcode scan) - precise, no Gemini call.
+app.get("/api/lookup-isbn", async (req, res) => {
+  const isbn = typeof req.query.isbn === "string" ? req.query.isbn : "";
+  if (!isbn) {
+    return res.status(400).json({ error: "isbn query parameter is required" });
+  }
+
+  try {
+    const result = await lookupByIsbn(isbn);
+    if (!result) {
+      return res.status(404).json({ error: "No book found for that barcode." });
+    }
+    res.json(result);
+  } catch (error) {
+    console.error("Lookup-isbn error:", error);
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to look up that barcode." });
   }
 });
 
