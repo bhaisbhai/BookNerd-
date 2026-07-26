@@ -3,7 +3,7 @@ import { BookOpen, Search, Calendar, Bell, X, LogOut, ChevronDown } from "lucide
 import { onAuthStateChanged, signInWithRedirect, getRedirectResult, signOut, User } from "firebase/auth";
 import { collection, doc, getDoc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
 import { auth, googleProvider, db } from "./lib/firebase.js";
-import { stripUndefined, commitInBatches } from "./lib/firestoreUtils.js";
+import { stripUndefined, commitInBatches, withTimeout } from "./lib/firestoreUtils.js";
 import { LibraryBook, FollowedSeries, UserSeriesFollow, ReleaseNotification } from "./types.js";
 import LibraryTab from "./components/LibraryTab.js";
 import AddBooksTab from "./components/AddBooksTab.js";
@@ -145,7 +145,7 @@ export default function App() {
         batch.set(doc(db, "users", user.uid, "library", b.id), stripUndefined(b));
       });
       for (const series of Object.values(guestFollowedSeries)) {
-        await setDoc(doc(db, "canonicalSeries", series.id), stripUndefined(series));
+        await withTimeout(setDoc(doc(db, "canonicalSeries", series.id), stripUndefined(series)));
       }
       await commitInBatches(db, Object.values(guestUserFollows), (batch, f) => {
         batch.set(doc(db, "users", user.uid, "followedSeries", f.seriesId), stripUndefined(f));
@@ -203,7 +203,7 @@ export default function App() {
   const handleUpdateLibraryBook = async (id: string, patch: Partial<LibraryBook>) => {
     if (user) {
       try {
-        await setDoc(doc(db, "users", user.uid, "library", id), stripUndefined(patch), { merge: true });
+        await withTimeout(setDoc(doc(db, "users", user.uid, "library", id), stripUndefined(patch), { merge: true }));
       } catch (e) {
         console.error("Firestore update library book error:", e);
         alert("Couldn't save that change. Please try again.");
@@ -216,7 +216,7 @@ export default function App() {
   const handleDeleteLibraryBook = async (id: string) => {
     if (user) {
       try {
-        await deleteDoc(doc(db, "users", user.uid, "library", id));
+        await withTimeout(deleteDoc(doc(db, "users", user.uid, "library", id)));
       } catch (e) {
         console.error("Firestore delete library book error:", e);
       }
@@ -229,8 +229,8 @@ export default function App() {
     const follow: UserSeriesFollow = { seriesId: series.id, followedAt: new Date().toISOString() };
     if (user) {
       try {
-        await setDoc(doc(db, "canonicalSeries", series.id), stripUndefined(series));
-        await setDoc(doc(db, "users", user.uid, "followedSeries", series.id), stripUndefined(follow), { merge: true });
+        await withTimeout(setDoc(doc(db, "canonicalSeries", series.id), stripUndefined(series)));
+        await withTimeout(setDoc(doc(db, "users", user.uid, "followedSeries", series.id), stripUndefined(follow), { merge: true }));
       } catch (e) {
         console.error("Firestore follow series error:", e);
         alert("Couldn't follow that series. Please try again.");
@@ -244,7 +244,7 @@ export default function App() {
   const handleUnfollowSeries = async (seriesId: string) => {
     if (user) {
       try {
-        await deleteDoc(doc(db, "users", user.uid, "followedSeries", seriesId));
+        await withTimeout(deleteDoc(doc(db, "users", user.uid, "followedSeries", seriesId)));
       } catch (e) {
         console.error("Firestore unfollow series error:", e);
       }
@@ -282,10 +282,10 @@ export default function App() {
           setScanMessage(`Found ${data.newsAdded} new announcement(s)!`);
           if (user) {
             for (const s of data.updatedSeriesList || []) {
-              await setDoc(doc(db, "canonicalSeries", s.id), { lastChecked: s.lastChecked }, { merge: true });
+              await withTimeout(setDoc(doc(db, "canonicalSeries", s.id), { lastChecked: s.lastChecked }, { merge: true }));
             }
             for (const n of data.newNotifications || []) {
-              await setDoc(doc(db, "users", user.uid, "notifications", n.id), stripUndefined(n));
+              await withTimeout(setDoc(doc(db, "users", user.uid, "notifications", n.id), stripUndefined(n)));
             }
           } else {
             for (const s of data.updatedSeriesList || []) {
@@ -313,7 +313,7 @@ export default function App() {
   const handleDismissNotification = async (id: string) => {
     if (user) {
       try {
-        await deleteDoc(doc(db, "users", user.uid, "notifications", id));
+        await withTimeout(deleteDoc(doc(db, "users", user.uid, "notifications", id)));
       } catch (e) {
         console.error("Firestore dismiss notification error:", e);
       }

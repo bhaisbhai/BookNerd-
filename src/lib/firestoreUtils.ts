@@ -24,6 +24,20 @@ export function stripUndefined<T extends object>(obj: T): T {
   return stripUndefinedDeep(obj) as T;
 }
 
+// batch.commit() (and setDoc/deleteDoc) only resolve once the backend has acked the write - on a
+// stalled or offline connection the SDK just keeps retrying, so the returned promise can hang
+// indefinitely with nothing surfaced to the user. Race it against a timeout so a bad connection
+// turns into a "please retry" error instead of a spinner that never resolves.
+export function withTimeout<T>(promise: Promise<T>, ms = 20000): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms);
+    promise.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (err) => { clearTimeout(timer); reject(err); }
+    );
+  });
+}
+
 // Firestore batches cap at 500 operations - chunk under that limit and commit each chunk as one
 // atomic write. Far more reliable for a bulk operation (e.g. pasting dozens of books at once)
 // than firing one independent setDoc per item: a batch either fully succeeds or fully fails,
@@ -37,6 +51,6 @@ export async function commitInBatches<T>(
   for (let i = 0; i < items.length; i += chunkSize) {
     const batch = writeBatch(db);
     items.slice(i, i + chunkSize).forEach(item => applyToBatch(batch, item));
-    await batch.commit();
+    await withTimeout(batch.commit());
   }
 }
