@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Search, Camera, Check, X, BookOpen, AlertCircle, Barcode } from "lucide-react";
+import { Search, Camera, Check, X, BookOpen, AlertCircle, Barcode, ClipboardList } from "lucide-react";
 import { LibraryBook, BookSuggestion, SeriesSearchResult, SeriesBook, FollowedSeries, ScanCandidate } from "../types.js";
 import { fileToResizedBase64 } from "../lib/imageUtils.js";
 import { slugify, normalize, findMatchingBook } from "../lib/bookMatching.js";
@@ -252,11 +252,12 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
     setSearchError(null);
   };
 
-  // --- Screenshot scan flow ---
+  // --- Screenshot scan / pasted-text flows (share a review-before-adding UI) ---
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [reviewCandidates, setReviewCandidates] = useState<ReviewCandidate[] | null>(null);
+  const [reviewSource, setReviewSource] = useState<"scanned" | "pasted">("scanned");
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -281,6 +282,7 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
         if (candidates.length === 0) {
           setScanError("No books could be identified in that photo. Try a clearer, well-lit shot of the spines.");
         } else {
+          setReviewSource("scanned");
           setReviewCandidates(candidates);
         }
       } else {
@@ -292,6 +294,47 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
       setScanError("An error occurred reading or uploading that photo.");
     } finally {
       setIsScanning(false);
+    }
+  };
+
+  const [pasteText, setPasteText] = useState("");
+  const [isParsingText, setIsParsingText] = useState(false);
+  const [parseTextError, setParseTextError] = useState<string | null>(null);
+
+  const handleParseText = async () => {
+    const text = pasteText.trim();
+    if (!text || isParsingText) return;
+
+    setIsParsingText(true);
+    setParseTextError(null);
+    setReviewCandidates(null);
+
+    try {
+      const res = await fetch("/api/parse-books-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const candidates: ReviewCandidate[] = (data.books || []).map((b: ScanCandidate) => ({ ...b, include: true }));
+        if (candidates.length === 0) {
+          setParseTextError("No books could be identified in that text.");
+        } else {
+          setReviewSource("pasted");
+          setReviewCandidates(candidates);
+          setPasteText("");
+        }
+      } else {
+        const errData = await res.json().catch(() => null);
+        setParseTextError(errData?.error || "Failed to parse that text. Please try again.");
+      }
+    } catch (err) {
+      console.error(err);
+      setParseTextError("An error occurred parsing that text.");
+    } finally {
+      setIsParsingText(false);
     }
   };
 
@@ -311,7 +354,7 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
         coverUrl: c.coverUrl,
         status: "want_to_read" as const,
         addedAt: new Date().toISOString(),
-        source: "scanned" as const
+        source: reviewSource
       }));
 
     if (newBooks.length > 0) {
@@ -498,6 +541,37 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
           <div className="flex items-start gap-2 pt-1">
             <AlertCircle className="w-3.5 h-3.5 text-danger mt-0.5 flex-shrink-0" />
             <p className="text-xs text-ink-muted">{scanError}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Paste a list of books */}
+      <div className="bg-surface rounded-2xl border border-line shadow-sm p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <ClipboardList className="w-4 h-4 text-ink-muted" strokeWidth={2} />
+          <p className="text-sm font-medium text-ink">Paste a list of books</p>
+        </div>
+        <p className="text-xs text-ink-muted">Paste in a list from anywhere - notes, an email, a Goodreads export - and we'll pick out the titles for you to review before adding.</p>
+
+        <textarea
+          value={pasteText}
+          onChange={(e) => setPasteText(e.target.value)}
+          rows={4}
+          placeholder={"e.g.\nThe Final Empire by Brandon Sanderson\nProject Hail Mary - Andy Weir\n3. Circe"}
+          className="w-full bg-app-bg border border-line rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none"
+        />
+        <button
+          onClick={handleParseText}
+          disabled={!pasteText.trim() || isParsingText}
+          className="px-4 py-2 bg-app-bg text-ink text-xs font-medium rounded-lg hover:bg-line transition-colors cursor-pointer disabled:opacity-40"
+        >
+          {isParsingText ? "Parsing..." : "Parse List"}
+        </button>
+
+        {parseTextError && (
+          <div className="flex items-start gap-2 pt-1">
+            <AlertCircle className="w-3.5 h-3.5 text-danger mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-ink-muted">{parseTextError}</p>
           </div>
         )}
       </div>
