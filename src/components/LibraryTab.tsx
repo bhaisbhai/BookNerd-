@@ -6,6 +6,7 @@ import RecommendationCard from "./RecommendationCard.js";
 import ContinueSeriesCard from "./ContinueSeriesCard.js";
 import { getBookLinks } from "../lib/bookLinks.js";
 import { slugify, findMatchingBook } from "../lib/bookMatching.js";
+import { getRecommendableWantToRead } from "../lib/libraryDedup.js";
 
 interface LibraryTabProps {
   libraryBooks: LibraryBook[];
@@ -36,7 +37,7 @@ export default function LibraryTab({ libraryBooks, followedSeries, onUpdateBook,
   const [isCheckingSeries, setIsCheckingSeries] = useState(false);
   const [checkSeriesError, setCheckSeriesError] = useState<string | null>(null);
 
-  const wantToReadBooks = libraryBooks.filter(b => b.status === "want_to_read");
+  const wantToReadBooks = getRecommendableWantToRead(libraryBooks);
   const tasteSignals = libraryBooks
     .filter(b => b.status === "read" && (b.rating || 0) > 0)
     .map(b => ({ title: b.title, rating: b.rating || 0 }));
