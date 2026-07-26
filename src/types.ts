@@ -12,7 +12,7 @@ export interface LibraryBook {
   finishedAt?: string; // ISO string, set when moved to "read"
   seriesId?: string;
   volumeNumber?: number;
-  source: "search" | "scanned" | "manual";
+  source: "search" | "scanned" | "pasted" | "manual";
   currentPage?: number;
   totalPages?: number;
 }

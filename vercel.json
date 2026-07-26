@@ -10,6 +10,7 @@
     "api/refresh-series.ts": { "maxDuration": 60 },
     "api/check-news.ts": { "maxDuration": 60 },
     "api/scan-books.ts": { "maxDuration": 60 },
+    "api/parse-books-text.ts": { "maxDuration": 60 },
     "api/recommend.ts": { "maxDuration": 60 }
   }
 }

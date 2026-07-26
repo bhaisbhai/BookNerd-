@@ -8,6 +8,7 @@ import { suggestBooks } from "./server/suggest.js";
 import { refreshSeriesData } from "./server/refreshSeries.js";
 import { checkNewsForSeries, NewsCheckSeriesInput } from "./server/newsCheck.js";
 import { scanBooksFromImage } from "./server/scanBooks.js";
+import { parseBooksFromText } from "./server/parseBooksText.js";
 import { recommendNextRead, RecommendCandidate, TasteSignal } from "./server/recommend.js";
 import { lookupByIsbn } from "./server/isbnLookup.js";
 import { ReleaseNotification } from "./src/types.js";
@@ -137,6 +138,23 @@ app.post("/api/scan-books", async (req, res) => {
   } catch (error) {
     console.error("Scan-books error:", error);
     res.status(500).json({ error: error instanceof Error ? error.message : "Failed to scan bookshelf photo." });
+  }
+});
+
+// POST parse a pasted block of text and return candidate books for the user to review before adding.
+app.post("/api/parse-books-text", async (req, res) => {
+  const { text } = req.body || {};
+
+  if (typeof text !== "string" || !text.trim()) {
+    return res.status(400).json({ error: "text is required" });
+  }
+
+  try {
+    const books = await parseBooksFromText(text);
+    res.json({ books });
+  } catch (error) {
+    console.error("Parse-books-text error:", error);
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to parse that text." });
   }
 });
 
