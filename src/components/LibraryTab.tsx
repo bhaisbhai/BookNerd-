@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Star, X, Trash2, BookOpen, AlertCircle, Search } from "lucide-react";
+import { Star, X, Trash2, BookOpen, AlertCircle, Search, Loader2 } from "lucide-react";
 import { LibraryBook, FollowedSeries, SeriesBook } from "../types.js";
 import BookCard from "./BookCard.js";
 import RecommendationCard from "./RecommendationCard.js";
@@ -361,7 +361,8 @@ export default function LibraryTab({ libraryBooks, followedSeries, onUpdateBook,
                     disabled={isCheckingSeries}
                     className="flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent-hover transition-colors cursor-pointer disabled:opacity-40"
                   >
-                    <Search className="w-3.5 h-3.5" /> {isCheckingSeries ? "Checking..." : "Check if this is part of a series"}
+                    {isCheckingSeries ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                    {isCheckingSeries ? "Checking..." : "Check if this is part of a series"}
                   </button>
                   {checkSeriesError && (
                     <div className="flex items-start gap-1.5 pt-1.5">

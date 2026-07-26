@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Search, Camera, Check, X, BookOpen, AlertCircle, Barcode, ClipboardList } from "lucide-react";
+import { Search, Camera, Check, X, BookOpen, AlertCircle, Barcode, ClipboardList, Loader2 } from "lucide-react";
 import { LibraryBook, BookSuggestion, SeriesSearchResult, SeriesBook, FollowedSeries, ScanCandidate } from "../types.js";
 import { fileToResizedBase64 } from "../lib/imageUtils.js";
 import { slugify, normalize, findMatchingBook } from "../lib/bookMatching.js";
@@ -287,6 +287,7 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
   // --- Screenshot scan / pasted-text flows (share a review-before-adding UI) ---
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [scanTakingAWhile, setScanTakingAWhile] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [reviewCandidates, setReviewCandidates] = useState<ReviewCandidate[] | null>(null);
   const [reviewSource, setReviewSource] = useState<"scanned" | "pasted">("scanned");
@@ -297,8 +298,14 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
     if (!file) return;
 
     setIsScanning(true);
+    setScanTakingAWhile(false);
     setScanError(null);
     setReviewCandidates(null);
+
+    // A photo with a lot of books genuinely takes longer (identifying titles, then looking up a
+    // cover for each) - say so after a few seconds rather than leaving a static "Scanning..."
+    // that starts to look stuck.
+    const slowTimer = setTimeout(() => setScanTakingAWhile(true), 4000);
 
     try {
       const { base64, mimeType } = await fileToResizedBase64(file);
@@ -325,12 +332,15 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
       console.error(err);
       setScanError("An error occurred reading or uploading that photo.");
     } finally {
+      clearTimeout(slowTimer);
       setIsScanning(false);
+      setScanTakingAWhile(false);
     }
   };
 
   const [pasteText, setPasteText] = useState("");
   const [isParsingText, setIsParsingText] = useState(false);
+  const [parseTakingAWhile, setParseTakingAWhile] = useState(false);
   const [parseTextError, setParseTextError] = useState<string | null>(null);
 
   const handleParseText = async () => {
@@ -338,8 +348,14 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
     if (!text || isParsingText) return;
 
     setIsParsingText(true);
+    setParseTakingAWhile(false);
     setParseTextError(null);
     setReviewCandidates(null);
+
+    // A long pasted list genuinely takes longer (identifying every title, then looking up a
+    // cover for each) - say so after a few seconds rather than leaving a static "Parsing..."
+    // that starts to look stuck.
+    const slowTimer = setTimeout(() => setParseTakingAWhile(true), 4000);
 
     try {
       const res = await fetch("/api/parse-books-text", {
@@ -366,7 +382,9 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
       console.error(err);
       setParseTextError("An error occurred parsing that text.");
     } finally {
+      clearTimeout(slowTimer);
       setIsParsingText(false);
+      setParseTakingAWhile(false);
     }
   };
 
@@ -530,7 +548,8 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
                   disabled={isCheckingSeries}
                   className="flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent-hover transition-colors cursor-pointer disabled:opacity-40"
                 >
-                  <Search className="w-3.5 h-3.5" /> {isCheckingSeries ? "Checking..." : "Check if this is part of a series"}
+                  {isCheckingSeries ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                  {isCheckingSeries ? "Checking..." : "Check if this is part of a series"}
                 </button>
                 {checkSeriesError && (
                   <div className="flex items-start gap-1.5 pt-1.5">
@@ -578,10 +597,15 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={isScanning}
-          className="px-4 py-2 bg-app-bg text-ink text-xs font-medium rounded-lg hover:bg-line transition-colors cursor-pointer disabled:opacity-40"
+          className="flex items-center gap-1.5 px-4 py-2 bg-app-bg text-ink text-xs font-medium rounded-lg hover:bg-line transition-colors cursor-pointer disabled:opacity-40"
         >
+          {isScanning && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
           {isScanning ? "Scanning..." : "Upload a Photo"}
         </button>
+
+        {isScanning && scanTakingAWhile && (
+          <p className="text-xs text-ink-muted">Still working - identifying titles and looking up covers. This can take a bit longer for a photo with a lot of books.</p>
+        )}
 
         {scanError && (
           <div className="flex items-start gap-2 pt-1">
@@ -609,10 +633,15 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
         <button
           onClick={handleParseText}
           disabled={!pasteText.trim() || isParsingText}
-          className="px-4 py-2 bg-app-bg text-ink text-xs font-medium rounded-lg hover:bg-line transition-colors cursor-pointer disabled:opacity-40"
+          className="flex items-center gap-1.5 px-4 py-2 bg-app-bg text-ink text-xs font-medium rounded-lg hover:bg-line transition-colors cursor-pointer disabled:opacity-40"
         >
+          {isParsingText && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
           {isParsingText ? "Parsing..." : "Parse List"}
         </button>
+
+        {isParsingText && parseTakingAWhile && (
+          <p className="text-xs text-ink-muted">Still working - identifying titles and looking up covers. This can take a bit longer for a long list.</p>
+        )}
 
         {parseTextError && (
           <div className="flex items-start gap-2 pt-1">

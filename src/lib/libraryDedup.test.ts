@@ -59,4 +59,23 @@ describe("getRecommendableWantToRead", () => {
     ];
     expect(getRecommendableWantToRead(library)).toEqual([]);
   });
+
+  // Regression test: a duplicate added via a photo/barcode scan often has an empty or
+  // OCR-imperfect author field, which wouldn't match the original entry's author under
+  // title+author matching - the exact gap that let a duplicate keep getting recommended.
+  it("excludes a duplicate even when its author field is empty", () => {
+    const library = [
+      makeBook({ id: "b1", author: "Frank Herbert", status: "read" }),
+      makeBook({ id: "b2", author: "", status: "want_to_read", source: "scanned" })
+    ];
+    expect(getRecommendableWantToRead(library)).toEqual([]);
+  });
+
+  it("excludes a duplicate even when its author field differs in formatting", () => {
+    const library = [
+      makeBook({ id: "b1", author: "J.R.R. Tolkien", title: "The Hobbit", status: "read" }),
+      makeBook({ id: "b2", author: "J R R Tolkien", title: "The Hobbit", status: "want_to_read" })
+    ];
+    expect(getRecommendableWantToRead(library)).toEqual([]);
+  });
 });
