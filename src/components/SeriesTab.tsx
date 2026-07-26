@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { RefreshCw, ChevronDown, ChevronUp, Check, Clock, X, Calendar, BookMarked, BookOpen, Star } from "lucide-react";
-import { FollowedSeries, UserSeriesFollow, LibraryBook, SeriesBook } from "../types.js";
+import { RefreshCw, ChevronDown, ChevronUp, Check, Clock, X, Calendar, BookMarked, BookOpen, Star, Search, Loader2 } from "lucide-react";
+import { FollowedSeries, UserSeriesFollow, LibraryBook, SeriesBook, SeriesSearchResult } from "../types.js";
 import { getNextToRead } from "../lib/seriesProgress.js";
-import { slugify } from "../lib/bookMatching.js";
+import { slugify, normalize, findMatchingBook } from "../lib/bookMatching.js";
+import { mapWithConcurrency } from "../lib/concurrency.js";
 
 interface SeriesTabProps {
   followedSeries: FollowedSeries[];
@@ -14,7 +15,10 @@ interface SeriesTabProps {
   onUnfollow: (seriesId: string) => void;
   onUpdateBook: (id: string, patch: Partial<LibraryBook>) => void;
   onAddBooks: (books: LibraryBook[]) => void;
+  onFollowSeries: (series: FollowedSeries) => void;
 }
+
+const LIBRARY_SCAN_CONCURRENCY = 4;
 
 type StatusValue = "" | LibraryBook["status"];
 
@@ -33,9 +37,95 @@ function getDaysUntilRelease(dateStr?: string): number | null {
   return Math.ceil((releaseDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-export default function SeriesTab({ followedSeries, userFollows, libraryBooks, onScanNews, isScanningNews, scanMessage, onUnfollow, onUpdateBook, onAddBooks }: SeriesTabProps) {
+export default function SeriesTab({ followedSeries, userFollows, libraryBooks, onScanNews, isScanningNews, scanMessage, onUnfollow, onUpdateBook, onAddBooks, onFollowSeries }: SeriesTabProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<{ series: FollowedSeries; book: SeriesBook } | null>(null);
+
+  const [isScanningLibrary, setIsScanningLibrary] = useState(false);
+  const [libraryScanProgress, setLibraryScanProgress] = useState<{ checked: number; total: number } | null>(null);
+  const [libraryScanMessage, setLibraryScanMessage] = useState<string | null>(null);
+
+  // Checks every book already in the library that isn't linked to a series yet (added via a
+  // scan, paste, or barcode, none of which detect series membership) and auto-follows any series
+  // found - a bulk, one-shot counterpart to the per-book "Check if this is part of a series"
+  // action in the Library tab.
+  const handleScanLibraryForSeries = async () => {
+    const seen = new Set<string>();
+    const candidates = libraryBooks.filter(b => {
+      if (b.seriesId) return false;
+      const key = normalize(b.title);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    if (candidates.length === 0) {
+      setLibraryScanMessage("Every book in your library is already linked to a series.");
+      return;
+    }
+
+    setIsScanningLibrary(true);
+    setLibraryScanMessage(null);
+    setLibraryScanProgress({ checked: 0, total: candidates.length });
+
+    let foundCount = 0;
+    let checked = 0;
+
+    await mapWithConcurrency(candidates, LIBRARY_SCAN_CONCURRENCY, async (book) => {
+      try {
+        const res = await fetch("/api/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: `${book.title} by ${book.author}`, matchTitle: book.title })
+        });
+
+        if (res.ok) {
+          const raw = await res.json();
+          const result: SeriesSearchResult = { ...raw, books: Array.isArray(raw.books) ? raw.books : [] };
+          const isPartOfSeries = result.books.length > 1 || !!result.upcomingBook;
+
+          if (isPartOfSeries) {
+            const matched = findMatchingBook(result, book.title);
+            const seriesId = slugify(result.title);
+
+            // Link every library entry sharing this title, not just the one instance checked -
+            // covers duplicates (e.g. the same book added twice via different flows).
+            const key = normalize(book.title);
+            libraryBooks.filter(lb => normalize(lb.title) === key).forEach(lb => {
+              onUpdateBook(lb.id, { seriesId, volumeNumber: matched?.volumeNumber });
+            });
+
+            onFollowSeries({
+              id: seriesId,
+              title: result.title,
+              author: result.author,
+              description: result.description,
+              coverUrl: result.coverUrl,
+              books: result.books,
+              upcomingBook: result.upcomingBook || null,
+              lastChecked: new Date().toISOString(),
+              confidence: result.confidence,
+              sourceUrls: result.sourceUrls
+            });
+            foundCount++;
+          }
+        }
+      } catch (err) {
+        console.error(`Library series scan failed for "${book.title}":`, err);
+      } finally {
+        checked++;
+        setLibraryScanProgress({ checked, total: candidates.length });
+      }
+    });
+
+    setIsScanningLibrary(false);
+    setLibraryScanProgress(null);
+    setLibraryScanMessage(
+      foundCount > 0
+        ? `Found and followed ${foundCount} series from your library!`
+        : `Checked ${candidates.length} book${candidates.length === 1 ? "" : "s"} - none appear to be part of an ongoing series.`
+    );
+  };
 
   const setBookStatus = (series: FollowedSeries, book: SeriesBook, libraryMatch: LibraryBook | undefined, status: LibraryBook["status"]) => {
     if (libraryMatch) {
@@ -61,27 +151,50 @@ export default function SeriesTab({ followedSeries, userFollows, libraryBooks, o
 
   return (
     <div className="space-y-6">
-      <div className="bg-surface rounded-2xl border border-line shadow-sm p-5 flex items-center justify-between gap-4">
+      <div className="bg-surface rounded-2xl border border-line shadow-sm p-5 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <p className="text-sm font-medium text-ink">Followed series</p>
-          <p className="text-xs text-ink-muted mt-0.5">{scanMessage || "Check for new announcements and release updates."}</p>
+          <p className="text-xs text-ink-muted mt-0.5">
+            {isScanningLibrary
+              ? (libraryScanProgress ? `Checking your library for series - ${libraryScanProgress.checked} of ${libraryScanProgress.total} checked...` : "Checking your library for series...")
+              : (libraryScanMessage || scanMessage || "Check for new announcements and release updates.")}
+          </p>
         </div>
-        <button
-          onClick={onScanNews}
-          disabled={isScanningNews || followedSeries.length === 0}
-          className="px-4 py-2 bg-ink text-white text-xs font-medium rounded-lg hover:opacity-85 transition-opacity cursor-pointer disabled:opacity-40 flex items-center gap-1.5 flex-shrink-0"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isScanningNews ? "animate-spin" : ""}`} />
-          Scan for news
-        </button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={handleScanLibraryForSeries}
+            disabled={isScanningLibrary}
+            className="px-4 py-2 bg-app-bg text-ink text-xs font-medium rounded-lg hover:bg-line transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
+          >
+            {isScanningLibrary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+            {isScanningLibrary ? "Checking..." : "Check library for series"}
+          </button>
+          <button
+            onClick={onScanNews}
+            disabled={isScanningNews || followedSeries.length === 0}
+            className="px-4 py-2 bg-ink text-white text-xs font-medium rounded-lg hover:opacity-85 transition-opacity cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isScanningNews ? "animate-spin" : ""}`} />
+            Scan for news
+          </button>
+        </div>
       </div>
 
       {followedSeries.length === 0 ? (
-        <div className="border border-dashed border-line rounded-2xl p-12 text-center">
+        <div className="border border-dashed border-line rounded-2xl p-12 text-center space-y-4">
           <Calendar className="w-8 h-8 mx-auto text-ink-muted/40 mb-3" strokeWidth={1.5} />
           <p className="text-sm text-ink-muted">
-            You're not following any series yet. Add a book that's part of one from Add Books to start.
+            You're not following any series yet.
           </p>
+          <button
+            onClick={handleScanLibraryForSeries}
+            disabled={isScanningLibrary}
+            className="px-4 py-2 bg-ink text-white text-xs font-medium rounded-lg hover:opacity-85 transition-opacity cursor-pointer disabled:opacity-40 inline-flex items-center gap-1.5"
+          >
+            {isScanningLibrary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+            {isScanningLibrary ? "Checking your library..." : "Check my library for series"}
+          </button>
+          <p className="text-xs text-ink-muted">Or add a book that's part of one from Add Books.</p>
         </div>
       ) : (
         <div className="space-y-3">

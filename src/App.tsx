@@ -484,6 +484,7 @@ export default function App() {
             onUnfollow={handleUnfollowSeries}
             onUpdateBook={handleUpdateLibraryBook}
             onAddBooks={handleAddLibraryBooks}
+            onFollowSeries={handleFollowSeries}
           />
         )}
       </main>
