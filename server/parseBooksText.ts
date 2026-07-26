@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import { enrichBook } from "./metadata.js";
+import { mapWithConcurrency } from "./concurrency.js";
 import { ScanCandidate } from "../src/types.js";
 
 dotenv.config();
@@ -15,7 +16,8 @@ const ai = new GoogleGenAI({
   },
 });
 
-const MAX_TEXT_LENGTH = 20000; // guards against pathological paste sizes
+const MAX_TEXT_LENGTH = 40000; // guards against pathological paste sizes
+const ENRICHMENT_CONCURRENCY = 8; // bounds outbound requests when a paste contains many books
 
 /**
  * Identifies individual books from a pasted block of freeform text and enriches each with a
@@ -75,22 +77,28 @@ For each book, extract the title and, if mentioned, the author. Use your general
     throw new Error("No response content received from Gemini.");
   }
 
-  const data = JSON.parse(response.text.trim()) as { books: { title: string; author?: string }[] };
+  let data: { books: { title: string; author?: string }[] };
+  try {
+    data = JSON.parse(response.text.trim());
+  } catch (error) {
+    console.error("Failed to parse Gemini's response for parseBooksFromText:", error);
+    throw new Error("Got an unreadable response while parsing that text. Try pasting a shorter list.");
+  }
   const rawCandidates = (data.books || []).filter(b => b.title && b.title.trim().length > 0);
 
-  // Enrich each candidate with a cover image so the user can visually confirm matches during review.
-  const enriched = await Promise.all(
-    rawCandidates.map(async (b): Promise<ScanCandidate> => {
-      const title = b.title.trim();
-      const author = (b.author || "").trim();
-      try {
-        const meta = await enrichBook(title, author);
-        return { title, author, coverUrl: meta?.coverUrl };
-      } catch {
-        return { title, author };
-      }
-    })
-  );
+  // Enrich each candidate with a cover image so the user can visually confirm matches during
+  // review. Bounded concurrency, not Promise.all, so a paste with dozens of books can't fire off
+  // an unbounded burst of outbound requests all at once.
+  const enriched = await mapWithConcurrency(rawCandidates, ENRICHMENT_CONCURRENCY, async (b): Promise<ScanCandidate> => {
+    const title = b.title.trim();
+    const author = (b.author || "").trim();
+    try {
+      const meta = await enrichBook(title, author);
+      return { title, author, coverUrl: meta?.coverUrl };
+    } catch {
+      return { title, author };
+    }
+  });
 
   return enriched;
 }

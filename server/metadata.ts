@@ -1,4 +1,5 @@
 import { SeriesBook } from "../src/types.js";
+import { mapWithConcurrency } from "./concurrency.js";
 
 interface EnrichedBookMetadata {
   coverUrl?: string;
@@ -8,6 +9,16 @@ interface EnrichedBookMetadata {
   description?: string;
   averageRating?: number;
   ratingsCount?: number;
+}
+
+const ENRICHMENT_TIMEOUT_MS = 6000;
+
+// A single slow/hanging lookup shouldn't be able to stall a whole batch (e.g. enriching 90 books
+// pasted at once) - cap how long any one metadata request is allowed to take.
+function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = ENRICHMENT_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
 /**
@@ -20,10 +31,10 @@ export async function enrichWithGoogleBooks(title: string, author: string): Prom
     if (process.env.GOOGLE_BOOKS_API_KEY) {
       url += `&key=${encodeURIComponent(process.env.GOOGLE_BOOKS_API_KEY)}`;
     }
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       headers: { "User-Agent": "BibliosTracker/1.0.0" }
     });
-    
+
     if (!res.ok) return null;
     const data = await res.json() as any;
     
@@ -53,10 +64,10 @@ export async function enrichWithGoogleBooks(title: string, author: string): Prom
 export async function enrichWithOpenLibrary(title: string, author: string): Promise<EnrichedBookMetadata | null> {
   try {
     const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author)}&limit=1`;
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       headers: { "User-Agent": "BibliosTracker/1.0.0 (contact: raj.arjan@gmail.com)" }
     });
-    
+
     if (!res.ok) return null;
     const data = await res.json() as any;
     
@@ -106,22 +117,20 @@ export async function enrichBook(title: string, author: string): Promise<Enriche
  * lookup fails or comes back empty is left as-is rather than failing the whole series.
  */
 export async function enrichSeriesBooks(books: SeriesBook[], author: string): Promise<SeriesBook[]> {
-  return Promise.all(
-    books.map(async (book) => {
-      if (book.coverUrl) return book;
-      try {
-        const enrichment = await enrichBook(book.title, author);
-        return {
-          ...book,
-          coverUrl: enrichment.coverUrl || book.coverUrl,
-          description: enrichment.description || book.description,
-          averageRating: enrichment.averageRating ?? book.averageRating,
-          ratingsCount: enrichment.ratingsCount ?? book.ratingsCount
-        };
-      } catch (error) {
-        console.error(`Series book enrichment failed for "${book.title}" by ${author}:`, error);
-        return book;
-      }
-    })
-  );
+  return mapWithConcurrency(books, 8, async (book) => {
+    if (book.coverUrl) return book;
+    try {
+      const enrichment = await enrichBook(book.title, author);
+      return {
+        ...book,
+        coverUrl: enrichment.coverUrl || book.coverUrl,
+        description: enrichment.description || book.description,
+        averageRating: enrichment.averageRating ?? book.averageRating,
+        ratingsCount: enrichment.ratingsCount ?? book.ratingsCount
+      };
+    } catch (error) {
+      console.error(`Series book enrichment failed for "${book.title}" by ${author}:`, error);
+      return book;
+    }
+  });
 }
