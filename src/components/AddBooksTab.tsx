@@ -7,7 +7,7 @@ import BarcodeScanner from "./BarcodeScanner.js";
 
 interface AddBooksTabProps {
   libraryBooks: LibraryBook[];
-  onAddBooks: (books: LibraryBook[]) => void;
+  onAddBooks: (books: LibraryBook[]) => Promise<boolean>;
   onFollowSeries: (series: FollowedSeries) => void;
 }
 
@@ -233,7 +233,10 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
 
   const isPartOfOngoingSeries = seriesResult && (seriesResult.books.length > 1 || !!seriesResult.upcomingBook);
 
-  const handleConfirmAdd = () => {
+  const [isAdding, setIsAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+
+  const handleConfirmAdd = async () => {
     if (!seriesResult || !matchedBook || !selectedSuggestion) return;
 
     const seriesId = isPartOfOngoingSeries ? slugify(seriesResult.title) : undefined;
@@ -252,7 +255,18 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
       source: "search"
     };
 
-    onAddBooks([book]);
+    setIsAdding(true);
+    setAddError(null);
+    // Wait for the write to actually succeed before claiming it did - showing "Added" the
+    // instant this is called, regardless of whether the save behind it worked, is exactly what
+    // let books silently vanish on refresh while still looking added in the moment.
+    const succeeded = await onAddBooks([book]);
+    setIsAdding(false);
+
+    if (!succeeded) {
+      setAddError("Couldn't save that book. Please check your connection and try again.");
+      return;
+    }
 
     if (seriesId && followSeries) {
       const followed: FollowedSeries = {
@@ -282,6 +296,7 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
     setMatchedBook(null);
     setSearchError(null);
     setCheckSeriesError(null);
+    setAddError(null);
   };
 
   // --- Screenshot scan / pasted-text flows (share a review-before-adding UI) ---
@@ -392,7 +407,10 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
     setReviewCandidates(prev => prev ? prev.map((c, i) => i === index ? { ...c, ...patch } : c) : prev);
   };
 
-  const confirmAddCandidates = () => {
+  const [isConfirmingCandidates, setIsConfirmingCandidates] = useState(false);
+  const [confirmCandidatesError, setConfirmCandidatesError] = useState<string | null>(null);
+
+  const confirmAddCandidates = async () => {
     if (!reviewCandidates) return;
     const now = Date.now();
     const newBooks: LibraryBook[] = reviewCandidates
@@ -407,10 +425,25 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
         source: reviewSource
       }));
 
-    if (newBooks.length > 0) {
-      onAddBooks(newBooks);
-      showConfirmation(`Added ${newBooks.length} book${newBooks.length === 1 ? "" : "s"} to your library`);
+    if (newBooks.length === 0) {
+      setReviewCandidates(null);
+      return;
     }
+
+    setIsConfirmingCandidates(true);
+    setConfirmCandidatesError(null);
+    // Wait for the write to actually succeed before closing the review panel and claiming
+    // success - closing it immediately (as this used to) meant a failed save still looked like
+    // it worked, and the books were simply gone on the next refresh.
+    const succeeded = await onAddBooks(newBooks);
+    setIsConfirmingCandidates(false);
+
+    if (!succeeded) {
+      setConfirmCandidatesError(`Couldn't save ${newBooks.length === 1 ? "that book" : "those books"}. Please check your connection and try again.`);
+      return;
+    }
+
+    showConfirmation(`Added ${newBooks.length} book${newBooks.length === 1 ? "" : "s"} to your library`);
     setReviewCandidates(null);
   };
 
@@ -560,18 +593,28 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
               </div>
             )}
 
+            {addError && (
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-3.5 h-3.5 text-danger mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-ink-muted">{addError}</p>
+              </div>
+            )}
+
             <div className="flex gap-2 pt-1">
               <button
                 onClick={resetSearch}
-                className="px-4 py-2 text-ink-muted text-xs font-medium rounded-lg hover:bg-app-bg transition-colors cursor-pointer"
+                disabled={isAdding}
+                className="px-4 py-2 text-ink-muted text-xs font-medium rounded-lg hover:bg-app-bg transition-colors cursor-pointer disabled:opacity-40"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmAdd}
-                className="px-4 py-2 bg-accent text-white text-xs font-medium rounded-lg hover:bg-accent-hover transition-colors cursor-pointer"
+                disabled={isAdding}
+                className="flex items-center gap-1.5 px-4 py-2 bg-accent text-white text-xs font-medium rounded-lg hover:bg-accent-hover transition-colors cursor-pointer disabled:opacity-60"
               >
-                Add to Library
+                {isAdding && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {isAdding ? "Adding..." : "Add to Library"}
               </button>
             </div>
           </div>
@@ -726,19 +769,28 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
             ))}
           </div>
 
+          {confirmCandidatesError && (
+            <div className="px-5 pt-4 flex items-start gap-2">
+              <AlertCircle className="w-3.5 h-3.5 text-danger mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-ink-muted">{confirmCandidatesError}</p>
+            </div>
+          )}
+
           <div className="p-5 border-t border-line flex justify-end gap-2">
             <button
               onClick={() => setReviewCandidates(null)}
-              className="px-4 py-2 text-ink-muted text-xs font-medium rounded-lg hover:bg-app-bg transition-colors cursor-pointer"
+              disabled={isConfirmingCandidates}
+              className="px-4 py-2 text-ink-muted text-xs font-medium rounded-lg hover:bg-app-bg transition-colors cursor-pointer disabled:opacity-40"
             >
               Cancel
             </button>
             <button
               onClick={confirmAddCandidates}
-              disabled={!reviewCandidates.some(c => c.include && c.title.trim())}
-              className="px-4 py-2 bg-accent text-white text-xs font-medium rounded-lg hover:bg-accent-hover transition-colors cursor-pointer disabled:opacity-40"
+              disabled={!reviewCandidates.some(c => c.include && c.title.trim()) || isConfirmingCandidates}
+              className="flex items-center gap-1.5 px-4 py-2 bg-accent text-white text-xs font-medium rounded-lg hover:bg-accent-hover transition-colors cursor-pointer disabled:opacity-40"
             >
-              Add {reviewCandidates.filter(c => c.include && c.title.trim()).length} to Library
+              {isConfirmingCandidates && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {isConfirmingCandidates ? "Adding..." : `Add ${reviewCandidates.filter(c => c.include && c.title.trim()).length} to Library`}
             </button>
           </div>
         </div>
