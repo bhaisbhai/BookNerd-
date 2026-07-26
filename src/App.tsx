@@ -3,7 +3,7 @@ import { BookOpen, Search, Calendar, Bell, X, LogOut, ChevronDown } from "lucide
 import { onAuthStateChanged, signInWithRedirect, getRedirectResult, signOut, User } from "firebase/auth";
 import { collection, doc, getDoc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
 import { auth, googleProvider, db } from "./lib/firebase.js";
-import { stripUndefined } from "./lib/firestoreUtils.js";
+import { stripUndefined, commitInBatches } from "./lib/firestoreUtils.js";
 import { LibraryBook, FollowedSeries, UserSeriesFollow, ReleaseNotification } from "./types.js";
 import LibraryTab from "./components/LibraryTab.js";
 import AddBooksTab from "./components/AddBooksTab.js";
@@ -141,14 +141,18 @@ export default function App() {
     if (!user) return;
     setIsMigrating(true);
     try {
-      await Promise.all(guestLibrary.map(b => setDoc(doc(db, "users", user.uid, "library", b.id), stripUndefined(b))));
+      await commitInBatches(db, guestLibrary, (batch, b) => {
+        batch.set(doc(db, "users", user.uid, "library", b.id), stripUndefined(b));
+      });
       for (const series of Object.values(guestFollowedSeries)) {
         await setDoc(doc(db, "canonicalSeries", series.id), stripUndefined(series));
       }
-      await Promise.all(
-        Object.values(guestUserFollows).map(f => setDoc(doc(db, "users", user.uid, "followedSeries", f.seriesId), stripUndefined(f)))
-      );
-      await Promise.all(guestNotifications.map(n => setDoc(doc(db, "users", user.uid, "notifications", n.id), stripUndefined(n))));
+      await commitInBatches(db, Object.values(guestUserFollows), (batch, f) => {
+        batch.set(doc(db, "users", user.uid, "followedSeries", f.seriesId), stripUndefined(f));
+      });
+      await commitInBatches(db, guestNotifications, (batch, n) => {
+        batch.set(doc(db, "users", user.uid, "notifications", n.id), stripUndefined(n));
+      });
 
       setGuestLibrary([]);
       setGuestFollowedSeries({});
@@ -171,16 +175,28 @@ export default function App() {
     setShowMigrationPrompt(false);
   };
 
-  const handleAddLibraryBooks = async (books: LibraryBook[]) => {
+  // Returns whether the write actually succeeded, so callers can show a confirmation that
+  // reflects reality instead of assuming success the instant this is called - a real gap that
+  // let "Added N books" show up even when the underlying save later failed.
+  const handleAddLibraryBooks = async (books: LibraryBook[]): Promise<boolean> => {
     if (user) {
       try {
-        await Promise.all(books.map(b => setDoc(doc(db, "users", user.uid, "library", b.id), stripUndefined(b))));
+        // A single atomic batch (chunked under Firestore's 500-operation limit) instead of firing
+        // one independent setDoc per book - far more reliable for a big batch (e.g. pasting dozens
+        // of books at once) than many concurrent connections, and it fails as a unit rather than
+        // some books silently saving while others don't.
+        await commitInBatches(db, books, (batch, b) => {
+          batch.set(doc(db, "users", user.uid, "library", b.id), stripUndefined(b));
+        });
+        return true;
       } catch (e) {
         console.error("Firestore add library books error:", e);
-        alert("Couldn't save that to your library. Please try again.");
+        alert("Couldn't save that to your library. Please check your connection and try again.");
+        return false;
       }
     } else {
       setGuestLibrary(prev => [...books, ...prev]);
+      return true;
     }
   };
 

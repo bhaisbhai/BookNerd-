@@ -14,7 +14,7 @@ interface SeriesTabProps {
   scanMessage: string;
   onUnfollow: (seriesId: string) => void;
   onUpdateBook: (id: string, patch: Partial<LibraryBook>) => void;
-  onAddBooks: (books: LibraryBook[]) => void;
+  onAddBooks: (books: LibraryBook[]) => Promise<boolean>;
   onFollowSeries: (series: FollowedSeries) => void;
 }
 
@@ -127,12 +127,12 @@ export default function SeriesTab({ followedSeries, userFollows, libraryBooks, o
     );
   };
 
-  const setBookStatus = (series: FollowedSeries, book: SeriesBook, libraryMatch: LibraryBook | undefined, status: LibraryBook["status"]) => {
+  const setBookStatus = async (series: FollowedSeries, book: SeriesBook, libraryMatch: LibraryBook | undefined, status: LibraryBook["status"]) => {
     if (libraryMatch) {
       onUpdateBook(libraryMatch.id, { status, finishedAt: status === "read" ? new Date().toISOString() : libraryMatch.finishedAt });
     } else {
       const now = new Date().toISOString();
-      onAddBooks([{
+      const succeeded = await onAddBooks([{
         id: `book-${slugify(book.title)}-${Date.now()}`,
         title: book.title,
         author: series.author,
@@ -144,6 +144,9 @@ export default function SeriesTab({ followedSeries, userFollows, libraryBooks, o
         volumeNumber: book.volumeNumber,
         source: "search"
       }]);
+      if (!succeeded) {
+        alert("Couldn't save that book. Please check your connection and try again.");
+      }
     }
   };
 
