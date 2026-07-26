@@ -111,7 +111,7 @@ export default function LibraryTab({ libraryBooks, followedSeries, onUpdateBook,
       const res = await fetch("/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: `${selectedBook.title} by ${selectedBook.author}` })
+        body: JSON.stringify({ query: `${selectedBook.title} by ${selectedBook.author}`, matchTitle: selectedBook.title })
       });
 
       if (res.ok) {

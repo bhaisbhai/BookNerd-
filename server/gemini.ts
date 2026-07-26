@@ -20,33 +20,25 @@ const ai = new GoogleGenAI({
 });
 
 /**
- * Searches the web via Gemini Search Grounding for live book series data.
+ * Fetches book series data, either via live Gemini Search Grounding or from the model's own
+ * knowledge, depending on mode.
  *
- * mode "quick" skips asking the model to individually research and cite a source URL for every
- * single book - that per-book verification instruction is what drives Gemini to run extra web
- * searches internally, and measured live it's the dominant cost (30-45s for a query spanning
- * several books). Used for the Add Books flow, where we only need one confirmed book plus a
- * rough series shape. mode "full" (the default) keeps the thorough per-book verification, used
- * when explicitly refreshing/following a series where sourced accuracy actually matters more
- * than speed.
+ * mode "quick" skips the googleSearch tool entirely and answers straight from the model's
+ * training knowledge - invoking the search tool at all (even just asking the model to verify one
+ * result) is itself the dominant latency cost, measured live at several seconds to tens of
+ * seconds per call, well before per-book verification is even a factor. Used for the Add Books
+ * flow, where we only need one confirmed book plus a rough series shape, and the model's own
+ * knowledge is accurate for the vast majority of series people search for. mode "full" (the
+ * default) keeps live web search and thorough per-book source verification, used when explicitly
+ * refreshing/following a series where sourced accuracy and picking up brand-new announcements
+ * actually matters more than speed.
  */
 export async function searchBookSeriesLive(query: string, mode: "quick" | "full" = "full"): Promise<SeriesSearchResult> {
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY environment variable is missing.");
   }
 
-  const verificationInstruction = mode === "full"
-    ? `
-For every book (both published and upcoming), research the level of trust and confidence and locate real source URLs (author blogs, publisher catalogs, major booksellers, public catalogs):
-- confidence: "confirmed" (publisher confirmed date), "likely" (seen on reputable booksellers/catalogs), "rumoured" (community speculation/unverified), or "unknown".
-- sourceUrls: List the actual URLs/websites found verifying this book's release.
-- lastVerifiedAt: Set this to the current date/timestamp.
-`
-    : `
-Do not spend time individually verifying or sourcing every single book - a best-effort confidence guess per book is fine. Prioritize speed: answer from what you already know plus a single check of the most relevant result, rather than searching separately for each book.
-`;
-
-  const prompt = `
+  const prompt = mode === "full" ? `
 Search the web for up-to-date, live, accurate data about the book series matching this query: "${query}".
 
 You need to extract:
@@ -55,14 +47,30 @@ You need to extract:
 3. A short, compelling 1-2 sentence description of the series.
 4. A chronological list of the main, mainline novels/volumes published in the series in correct reading order. Include their volume number (starting from 1), title, and publication/release date.
 5. Critical: Search for any upcoming book, recently announced book, or next volume in development for this series. If the author has announced a new book, or if there is a book with a scheduled release date (e.g. in late 2026, 2027, or TBA), extract its title, expected release date, and a brief description. If no upcoming book is announced or scheduled, do not include the upcomingBook field (or set it to null).
-${verificationInstruction}`;
+
+For every book (both published and upcoming), research the level of trust and confidence and locate real source URLs (author blogs, publisher catalogs, major booksellers, public catalogs):
+- confidence: "confirmed" (publisher confirmed date), "likely" (seen on reputable booksellers/catalogs), "rumoured" (community speculation/unverified), or "unknown".
+- sourceUrls: List the actual URLs/websites found verifying this book's release.
+- lastVerifiedAt: Set this to the current date/timestamp.
+` : `
+Answer from your own existing knowledge about the book series matching this query: "${query}" - this is a quick lookup, so do not search the web; just answer directly.
+
+You need to provide:
+1. The official name of the series.
+2. The full name of the author.
+3. A short, compelling 1-2 sentence description of the series.
+4. A chronological list of the main, mainline novels/volumes published in the series in correct reading order. Include their volume number (starting from 1), title, and publication/release date.
+5. If you already know of an upcoming or newly announced book in this series, include it - but don't worry about exhaustively covering this, since it's not searched.
+
+A best-effort confidence guess per book is fine - set confidence to "likely" or "unknown" rather than spending effort determining it precisely, and leave sourceUrls empty.
+`;
 
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",
       contents: prompt,
       config: {
-        tools: [{ googleSearch: {} }],
+        ...(mode === "full" ? { tools: [{ googleSearch: {} }] } : {}),
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,

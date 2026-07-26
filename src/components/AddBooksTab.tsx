@@ -25,7 +25,6 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
   const [suggestError, setSuggestError] = useState<string | null>(null);
 
   const [isSearching, setIsSearching] = useState(false);
-  const [searchTakingAWhile, setSearchTakingAWhile] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
   const confirmationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -47,6 +46,8 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
   const [matchedBook, setMatchedBook] = useState<SeriesBook | null>(null);
   const [confirmStatus, setConfirmStatus] = useState<ConfirmStatus>("want_to_read");
   const [followSeries, setFollowSeries] = useState(true);
+  const [isCheckingSeries, setIsCheckingSeries] = useState(false);
+  const [checkSeriesError, setCheckSeriesError] = useState<string | null>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suppressNextSuggestRef = useRef(false);
@@ -94,51 +95,25 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
     };
   }, [query]);
 
-  // Shared by both paths into a lookup: picking a suggestion, and typing a full title and
-  // hitting Enter directly (which doesn't depend on the suggestions API working at all).
-  const runSearch = async (searchQuery: string, matchTitle: string) => {
-    setSeriesResult(null);
-    setMatchedBook(null);
+  // Populates the confirm-add panel instantly from Google-Books-sourced data (a chosen
+  // suggestion, an ISBN lookup, or the top hit for typed text) - no Gemini call, so adding a
+  // single book never has to wait on live web search. Series membership isn't known yet at this
+  // point; "Check for series" below is an explicit, opt-in way to find out, since that's the one
+  // part of this flow that genuinely needs Gemini and can take several seconds.
+  const showBookForConfirmation = (suggestion: BookSuggestion) => {
     setSearchError(null);
+    setCheckSeriesError(null);
     setConfirmStatus("want_to_read");
     setFollowSeries(true);
-    setIsSearching(true);
-    setSearchTakingAWhile(false);
-
-    // Live web search can genuinely take a while - say so after a few seconds rather than
-    // leaving a bare "Looking up details..." that starts to look stuck.
-    const slowTimer = setTimeout(() => setSearchTakingAWhile(true), 5000);
-
-    try {
-      const res = await fetch("/api/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: searchQuery })
-      });
-
-      if (res.ok) {
-        const raw = await res.json();
-        // Defense-in-depth: normalize here too, even though the server guarantees this -
-        // an AI-generated response shape should never be trusted blindly on the client either.
-        const result: SeriesSearchResult = { ...raw, books: Array.isArray(raw.books) ? raw.books : [] };
-        if (result.books.length === 0) {
-          setSearchError("Couldn't find book details for that title. Try again.");
-        } else {
-          setSeriesResult(result);
-          setMatchedBook(findMatchingBook(result, matchTitle));
-        }
-      } else {
-        const errData = await res.json().catch(() => null);
-        setSearchError(errData?.error || "Couldn't find details for that book. Try again.");
-      }
-    } catch (err) {
-      console.error(err);
-      setSearchError("An error occurred looking up that book.");
-    } finally {
-      clearTimeout(slowTimer);
-      setIsSearching(false);
-      setSearchTakingAWhile(false);
-    }
+    setSelectedSuggestion(suggestion);
+    setSeriesResult({
+      title: suggestion.title,
+      author: suggestion.author,
+      description: "",
+      coverUrl: suggestion.coverUrl,
+      books: [{ id: slugify(suggestion.title), title: suggestion.title, volumeNumber: 1, status: "released" }]
+    });
+    setMatchedBook({ id: slugify(suggestion.title), title: suggestion.title, volumeNumber: 1, status: "released", coverUrl: suggestion.coverUrl });
   };
 
   const handleSelectSuggestion = (suggestion: BookSuggestion) => {
@@ -147,8 +122,45 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
     setQuery(suggestion.title);
     setSuggestions([]);
     setSuggestError(null);
-    setSelectedSuggestion(suggestion);
-    runSearch(`${suggestion.title} by ${suggestion.author}`, suggestion.title);
+    showBookForConfirmation(suggestion);
+  };
+
+  // Opt-in lookup for whether the book currently in the confirm panel is part of a series -
+  // separate from the instant panel above, since this is the one step that needs Gemini and can
+  // take a while.
+  const handleCheckForSeries = async () => {
+    if (!matchedBook || !selectedSuggestion) return;
+    setIsCheckingSeries(true);
+    setCheckSeriesError(null);
+
+    try {
+      const res = await fetch("/api/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: `${matchedBook.title} by ${selectedSuggestion.author}`, matchTitle: matchedBook.title })
+      });
+
+      if (res.ok) {
+        const raw = await res.json();
+        // Defense-in-depth: normalize here too, even though the server guarantees this -
+        // an AI-generated response shape should never be trusted blindly on the client either.
+        const result: SeriesSearchResult = { ...raw, books: Array.isArray(raw.books) ? raw.books : [] };
+        const isPartOfSeries = result.books.length > 1 || !!result.upcomingBook;
+        if (!isPartOfSeries) {
+          setCheckSeriesError("Couldn't find a series for this book.");
+        } else {
+          setSeriesResult(result);
+          setMatchedBook(findMatchingBook(result, matchedBook.title));
+        }
+      } else {
+        setCheckSeriesError("Couldn't find a series for this book.");
+      }
+    } catch (err) {
+      console.error(err);
+      setCheckSeriesError("An error occurred checking for a series.");
+    } finally {
+      setIsCheckingSeries(false);
+    }
   };
 
   // --- Barcode scan flow ---
@@ -181,8 +193,10 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
   };
 
   // Fallback for when you already know exactly what you want and don't want to wait on (or
-  // depend on) the instant-suggestions API - just type the full title and press Enter.
-  const handleDirectSearch = (e: React.FormEvent) => {
+  // depend on) the instant-suggestions dropdown - just type the full title and press Enter.
+  // Still a fast, non-AI Google Books lookup, just taking the top match instead of one you
+  // clicked from the dropdown.
+  const handleDirectSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     const typed = query.trim();
     if (!typed || isSearching) return;
@@ -191,8 +205,25 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
     setShowSuggestions(false);
     setSuggestions([]);
     setSuggestError(null);
-    setSelectedSuggestion({ title: typed, author: "" });
-    runSearch(typed, typed);
+    setSearchError(null);
+    setIsSearching(true);
+
+    try {
+      const res = await fetch(`/api/suggest?q=${encodeURIComponent(typed)}`);
+      const data = res.ok ? await res.json() : { suggestions: [] };
+      const match = (data.suggestions || [])[0];
+
+      if (match) {
+        showBookForConfirmation(match);
+      } else {
+        setSearchError("Couldn't find that book. Try a different title or spelling.");
+      }
+    } catch (err) {
+      console.error(err);
+      setSearchError("An error occurred looking up that book.");
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const isAlreadyInLibrary = (title: string, author: string) => {
@@ -250,6 +281,7 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
     setSeriesResult(null);
     setMatchedBook(null);
     setSearchError(null);
+    setCheckSeriesError(null);
   };
 
   // --- Screenshot scan / pasted-text flows (share a review-before-adding UI) ---
@@ -432,9 +464,7 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
 
       {isSearching && (
         <div className="bg-surface rounded-2xl border border-line shadow-sm p-6 text-center">
-          <p className="text-sm text-ink-muted">
-            {searchTakingAWhile ? "Still searching the web for verified details - this can take a bit..." : "Looking up details..."}
-          </p>
+          <p className="text-sm text-ink-muted">Looking up details...</p>
         </div>
       )}
 
@@ -483,7 +513,7 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
               </div>
             </div>
 
-            {isPartOfOngoingSeries && (
+            {isPartOfOngoingSeries ? (
               <label className="flex items-center gap-2 text-xs text-ink-muted cursor-pointer">
                 <input
                   type="checkbox"
@@ -493,6 +523,22 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
                 />
                 Also follow <span className="font-medium text-ink">{seriesResult.title}</span> for new release news
               </label>
+            ) : (
+              <div>
+                <button
+                  onClick={handleCheckForSeries}
+                  disabled={isCheckingSeries}
+                  className="flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent-hover transition-colors cursor-pointer disabled:opacity-40"
+                >
+                  <Search className="w-3.5 h-3.5" /> {isCheckingSeries ? "Checking..." : "Check if this is part of a series"}
+                </button>
+                {checkSeriesError && (
+                  <div className="flex items-start gap-1.5 pt-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-danger mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-ink-muted">{checkSeriesError}</p>
+                  </div>
+                )}
+              </div>
             )}
 
             <div className="flex gap-2 pt-1">
