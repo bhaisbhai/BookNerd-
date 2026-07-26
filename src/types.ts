@@ -13,6 +13,8 @@ export interface LibraryBook {
   seriesId?: string;
   volumeNumber?: number;
   source: "search" | "scanned" | "manual";
+  currentPage?: number;
+  totalPages?: number;
 }
 
 // One volume in a series' canonical, shared publication timeline.
