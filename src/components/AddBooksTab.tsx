@@ -574,7 +574,7 @@ export default function AddBooksTab({ libraryBooks, onAddBooks, onFollowSeries }
         </div>
         <p className="text-xs text-ink-muted">A bookshelf, a single book's cover, or a screenshot from Goodreads or similar - we'll identify the titles and let you review them before adding.</p>
 
-        <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={isScanning}
