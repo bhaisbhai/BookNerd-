@@ -27,6 +27,10 @@ export interface SeriesBook {
   sourceUrls?: string[];
   confidence?: "confirmed" | "likely" | "rumoured" | "unknown";
   lastVerifiedAt?: string;
+  coverUrl?: string; // this specific book's own cover - never the series/first-book cover
+  description?: string; // per-book synopsis, from Google Books/Open Library metadata
+  averageRating?: number; // public rating out of 5, from Google Books, if available
+  ratingsCount?: number;
 }
 
 export interface UpcomingBook {

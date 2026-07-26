@@ -64,6 +64,7 @@ export default function LibraryTab({ libraryBooks, followedSeries, onUpdateBook,
   }, [libraryBooks, statusFilter, sortBy]);
 
   const selectedBook = selectedId ? libraryBooks.find(b => b.id === selectedId) || null : null;
+  const selectedBookSeries = selectedBook?.seriesId ? followedSeries.find(s => s.id === selectedBook.seriesId) || null : null;
 
   const openBook = (book: LibraryBook) => {
     setSelectedId(book.id);
@@ -92,7 +93,7 @@ export default function LibraryTab({ libraryBooks, followedSeries, onUpdateBook,
       id: `book-${slugify(book.title)}-${Date.now()}`,
       title: book.title,
       author: series.author,
-      coverUrl: series.coverUrl,
+      coverUrl: book.coverUrl || series.coverUrl,
       status: "reading",
       addedAt: now,
       seriesId: series.id,
@@ -265,6 +266,11 @@ export default function LibraryTab({ libraryBooks, followedSeries, onUpdateBook,
                   <div>
                     <h3 className="text-base font-semibold text-ink leading-snug">{selectedBook.title}</h3>
                     <p className="text-xs text-ink-muted mt-0.5">{selectedBook.author}</p>
+                    {selectedBookSeries && selectedBook.volumeNumber && (
+                      <p className="text-xs text-accent font-medium mt-0.5">
+                        Book {selectedBook.volumeNumber} of {selectedBookSeries.books.length} in {selectedBookSeries.title}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <button onClick={closeBook} className="text-ink-muted hover:text-ink cursor-pointer flex-shrink-0">

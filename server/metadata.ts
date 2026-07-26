@@ -1,9 +1,13 @@
+import { SeriesBook } from "../src/types.js";
+
 interface EnrichedBookMetadata {
   coverUrl?: string;
   publisher?: string;
   publishDate?: string;
   isbn?: string;
   description?: string;
+  averageRating?: number;
+  ratingsCount?: number;
 }
 
 /**
@@ -32,7 +36,9 @@ export async function enrichWithGoogleBooks(title: string, author: string): Prom
         publisher: volumeInfo.publisher,
         publishDate: volumeInfo.publishedDate,
         isbn: isbnObj?.identifier,
-        description: volumeInfo.description
+        description: volumeInfo.description,
+        averageRating: volumeInfo.averageRating,
+        ratingsCount: volumeInfo.ratingsCount
       };
     }
   } catch (error) {
@@ -87,6 +93,35 @@ export async function enrichBook(title: string, author: string): Promise<Enriche
     publisher: gb?.publisher || ol?.publisher,
     publishDate: gb?.publishDate || ol?.publishDate,
     isbn: gb?.isbn || ol?.isbn,
-    description: gb?.description || ol?.description
+    description: gb?.description || ol?.description,
+    averageRating: gb?.averageRating,
+    ratingsCount: gb?.ratingsCount
   };
+}
+
+/**
+ * Enriches every book in a series with its own cover, synopsis, and rating - each volume in a
+ * series has a different cover, so this must run per-book rather than once for the whole series
+ * (which previously left every book showing the first volume's cover). Best-effort: a book whose
+ * lookup fails or comes back empty is left as-is rather than failing the whole series.
+ */
+export async function enrichSeriesBooks(books: SeriesBook[], author: string): Promise<SeriesBook[]> {
+  return Promise.all(
+    books.map(async (book) => {
+      if (book.coverUrl) return book;
+      try {
+        const enrichment = await enrichBook(book.title, author);
+        return {
+          ...book,
+          coverUrl: enrichment.coverUrl || book.coverUrl,
+          description: enrichment.description || book.description,
+          averageRating: enrichment.averageRating ?? book.averageRating,
+          ratingsCount: enrichment.ratingsCount ?? book.ratingsCount
+        };
+      } catch (error) {
+        console.error(`Series book enrichment failed for "${book.title}" by ${author}:`, error);
+        return book;
+      }
+    })
+  );
 }

@@ -3,7 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { searchBookSeriesLive } from "./server/gemini.js";
-import { enrichBook } from "./server/metadata.js";
+import { enrichSeriesBooks } from "./server/metadata.js";
 import { suggestBooks } from "./server/suggest.js";
 import { refreshSeriesData } from "./server/refreshSeries.js";
 import { checkNewsForSeries, NewsCheckSeriesInput } from "./server/newsCheck.js";
@@ -73,12 +73,11 @@ app.post("/api/search", async (req, res) => {
   try {
     const results = await searchBookSeriesLive(query, "quick");
 
-    // Enrich with genuine metadata if cover is missing or placeholder
-    if (!results.coverUrl && results.books && results.books.length > 0) {
-      const firstBookTitle = results.books[0].title;
-      const enrichment = await enrichBook(firstBookTitle, results.author);
-      if (enrichment && enrichment.coverUrl) {
-        results.coverUrl = enrichment.coverUrl;
+    // Each book gets its own cover/synopsis/rating - never reuse one book's metadata for another.
+    if (results.books && results.books.length > 0) {
+      results.books = await enrichSeriesBooks(results.books, results.author);
+      if (!results.coverUrl) {
+        results.coverUrl = results.books[0]?.coverUrl;
       }
     }
 

@@ -1,5 +1,5 @@
 import { searchBookSeriesLive } from "../server/gemini.js";
-import { enrichBook } from "../server/metadata.js";
+import { enrichSeriesBooks } from "../server/metadata.js";
 
 type VercelRequest = {
   method?: string;
@@ -29,11 +29,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const results = await searchBookSeriesLive(query, "quick");
 
-    if (!results.coverUrl && results.books && results.books.length > 0) {
-      const firstBookTitle = results.books[0].title;
-      const enrichment = await enrichBook(firstBookTitle, results.author);
-      if (enrichment?.coverUrl) {
-        results.coverUrl = enrichment.coverUrl;
+    // Each book gets its own cover/synopsis/rating - never reuse one book's metadata for another.
+    if (results.books && results.books.length > 0) {
+      results.books = await enrichSeriesBooks(results.books, results.author);
+      if (!results.coverUrl) {
+        results.coverUrl = results.books[0]?.coverUrl;
       }
     }
 

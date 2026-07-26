@@ -482,6 +482,8 @@ export default function App() {
             isScanningNews={isScanningNews}
             scanMessage={scanMessage}
             onUnfollow={handleUnfollowSeries}
+            onUpdateBook={handleUpdateLibraryBook}
+            onAddBooks={handleAddLibraryBooks}
           />
         )}
       </main>
