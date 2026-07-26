@@ -1,5 +1,5 @@
 import { SeriesBook } from "../src/types.js";
-import { mapWithConcurrency } from "./concurrency.js";
+import { mapWithConcurrency } from "../src/lib/concurrency.js";
 
 interface EnrichedBookMetadata {
   coverUrl?: string;

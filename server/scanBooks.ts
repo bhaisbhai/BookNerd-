@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import { enrichBook } from "./metadata.js";
-import { mapWithConcurrency } from "./concurrency.js";
+import { mapWithConcurrency } from "../src/lib/concurrency.js";
 import { ScanCandidate } from "../src/types.js";
 
 dotenv.config();
