@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { stripUndefined, commitInBatches } from "./firestoreUtils.js";
+import { stripUndefined, commitInBatches, withTimeout } from "./firestoreUtils.js";
 import { writeBatch } from "firebase/firestore";
 
 vi.mock("firebase/firestore", () => ({
@@ -127,5 +127,40 @@ describe("commitInBatches", () => {
     await expect(
       commitInBatches({} as any, [{ id: "a" }], (batch, item) => batch.set(item as any, item))
     ).rejects.toThrow("network down");
+  });
+
+  // Regression test: on a stalled/offline connection batch.commit() never resolves or rejects
+  // on its own - the SDK just keeps retrying - which used to leave the "Adding..." button
+  // spinning forever with no way for the user to recover. commitInBatches now races the commit
+  // against a timeout so a bad connection surfaces as an error instead of an infinite spinner.
+  it("rejects instead of hanging forever when commit() never settles", async () => {
+    vi.useFakeTimers();
+    const commit = vi.fn().mockReturnValue(new Promise(() => {})); // never resolves
+    (writeBatch as any).mockReturnValue({ set: vi.fn(), commit });
+
+    const promise = commitInBatches({} as any, [{ id: "a" }], (batch, item) => batch.set(item as any, item), 400);
+    const assertion = expect(promise).rejects.toThrow(/Timed out/);
+    await vi.runAllTimersAsync();
+    await assertion;
+    vi.useRealTimers();
+  });
+});
+
+describe("withTimeout", () => {
+  it("resolves with the value when the promise settles before the timeout", async () => {
+    await expect(withTimeout(Promise.resolve("done"), 1000)).resolves.toBe("done");
+  });
+
+  it("rejects with the original error when the promise rejects before the timeout", async () => {
+    await expect(withTimeout(Promise.reject(new Error("boom")), 1000)).rejects.toThrow("boom");
+  });
+
+  it("rejects with a timeout error when the promise never settles", async () => {
+    vi.useFakeTimers();
+    const promise = withTimeout(new Promise(() => {}), 5000);
+    const assertion = expect(promise).rejects.toThrow(/Timed out/);
+    await vi.runAllTimersAsync();
+    await assertion;
+    vi.useRealTimers();
   });
 });
