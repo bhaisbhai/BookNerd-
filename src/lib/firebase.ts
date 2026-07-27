@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 
 const firebaseProjectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || "gen-lang-client-0463861832";
 
@@ -18,4 +18,13 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
 const firestoreDatabaseId = import.meta.env.VITE_FIRESTORE_DATABASE_ID;
-export const db = firestoreDatabaseId ? getFirestore(app, firestoreDatabaseId) : getFirestore(app);
+// Firestore's default transport streams over HTTP/2, which some corporate/school networks, VPNs,
+// and carriers silently mangle - the connection just never completes, with no error thrown and no
+// way to tell apart from an offline device (this was reported as writes reliably timing out with
+// no response at all, while everything else - including Firebase Auth, which doesn't use this
+// channel - worked fine). experimentalAutoDetectLongPolling falls back to long-polling in exactly
+// that situation, and is a no-op for networks where streaming already works fine.
+const firestoreSettings = { experimentalAutoDetectLongPolling: true };
+export const db = firestoreDatabaseId
+  ? initializeFirestore(app, firestoreSettings, firestoreDatabaseId)
+  : initializeFirestore(app, firestoreSettings);
