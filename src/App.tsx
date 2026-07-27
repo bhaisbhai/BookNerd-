@@ -3,7 +3,7 @@ import { BookOpen, Search, Calendar, Bell, X, LogOut, ChevronDown } from "lucide
 import { onAuthStateChanged, signInWithRedirect, getRedirectResult, signOut, User } from "firebase/auth";
 import { collection, doc, getDoc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
 import { auth, googleProvider, db } from "./lib/firebase.js";
-import { stripUndefined, commitInBatches, withTimeout } from "./lib/firestoreUtils.js";
+import { stripUndefined, commitInBatches, withTimeout, describeFirestoreError } from "./lib/firestoreUtils.js";
 import { LibraryBook, FollowedSeries, UserSeriesFollow, ReleaseNotification } from "./types.js";
 import LibraryTab from "./components/LibraryTab.js";
 import AddBooksTab from "./components/AddBooksTab.js";
@@ -191,7 +191,7 @@ export default function App() {
         return true;
       } catch (e) {
         console.error("Firestore add library books error:", e);
-        alert("Couldn't save that to your library. Please check your connection and try again.");
+        alert(`Couldn't save that to your library (${describeFirestoreError(e)}). Please check your connection and try again.`);
         return false;
       }
     } else {
@@ -206,7 +206,7 @@ export default function App() {
         await withTimeout(setDoc(doc(db, "users", user.uid, "library", id), stripUndefined(patch), { merge: true }));
       } catch (e) {
         console.error("Firestore update library book error:", e);
-        alert("Couldn't save that change. Please try again.");
+        alert(`Couldn't save that change (${describeFirestoreError(e)}). Please try again.`);
       }
     } else {
       setGuestLibrary(prev => prev.map(b => b.id === id ? { ...b, ...patch } : b));
@@ -233,7 +233,7 @@ export default function App() {
         await withTimeout(setDoc(doc(db, "users", user.uid, "followedSeries", series.id), stripUndefined(follow), { merge: true }));
       } catch (e) {
         console.error("Firestore follow series error:", e);
-        alert("Couldn't follow that series. Please try again.");
+        alert(`Couldn't follow that series (${describeFirestoreError(e)}). Please try again.`);
       }
     } else {
       setGuestFollowedSeries(prev => ({ ...prev, [series.id]: series }));

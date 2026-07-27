@@ -38,6 +38,16 @@ export function withTimeout<T>(promise: Promise<T>, ms = 20000): Promise<T> {
   });
 }
 
+// A bare "please check your connection" message is indistinguishable whether the real cause is
+// offline, a security-rules rejection, an unauthenticated/expired session, or something else -
+// every one of those looks identical to a user with no way to open devtools. Firebase errors carry
+// a `.code` (e.g. "permission-denied", "unavailable", "unauthenticated") that pinpoints which -
+// surface it so a bug report actually says what's wrong instead of us having to guess blind.
+export function describeFirestoreError(e: unknown): string {
+  const code = (e as { code?: unknown } | null)?.code;
+  return typeof code === "string" ? code : "unknown error";
+}
+
 // Firestore batches cap at 500 operations - chunk under that limit and commit each chunk as one
 // atomic write. Far more reliable for a bulk operation (e.g. pasting dozens of books at once)
 // than firing one independent setDoc per item: a batch either fully succeeds or fully fails,
