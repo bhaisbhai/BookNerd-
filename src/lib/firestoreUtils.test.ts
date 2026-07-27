@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { stripUndefined, commitInBatches, withTimeout } from "./firestoreUtils.js";
+import { stripUndefined, commitInBatches, withTimeout, describeFirestoreError } from "./firestoreUtils.js";
 import { writeBatch } from "firebase/firestore";
 
 vi.mock("firebase/firestore", () => ({
@@ -162,5 +162,33 @@ describe("withTimeout", () => {
     await vi.runAllTimersAsync();
     await assertion;
     vi.useRealTimers();
+  });
+
+  // Regression test: a timeout used to reject with a bare Error, which describeFirestoreError
+  // couldn't tell apart from any other uncoded error - both showed as an unhelpful "unknown
+  // error" in the save-failure alert. Tagging it with .code = "client-timeout" makes a report
+  // that says "unknown error" actually distinguishable from one that timed out.
+  it("tags its rejection with a client-timeout code", async () => {
+    vi.useFakeTimers();
+    const promise = withTimeout(new Promise(() => {}), 5000);
+    const assertion = promise.catch((e) => expect((e as { code: string }).code).toBe("client-timeout"));
+    await vi.runAllTimersAsync();
+    await assertion;
+    vi.useRealTimers();
+  });
+});
+
+describe("describeFirestoreError", () => {
+  it("returns the .code when present", () => {
+    expect(describeFirestoreError({ code: "permission-denied", message: "Missing or insufficient permissions" })).toBe("permission-denied");
+  });
+
+  it("falls back to .message when there's no .code, instead of a dead-end unknown error", () => {
+    expect(describeFirestoreError(new TypeError("Cannot read properties of undefined"))).toBe("Cannot read properties of undefined");
+  });
+
+  it("falls back to 'unknown error' only when neither .code nor .message is present", () => {
+    expect(describeFirestoreError("just a string")).toBe("unknown error");
+    expect(describeFirestoreError(null)).toBe("unknown error");
   });
 });

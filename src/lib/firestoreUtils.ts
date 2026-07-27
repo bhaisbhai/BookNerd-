@@ -30,7 +30,15 @@ export function stripUndefined<T extends object>(obj: T): T {
 // turns into a "please retry" error instead of a spinner that never resolves.
 export function withTimeout<T>(promise: Promise<T>, ms = 20000): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms);
+    const timer = setTimeout(() => {
+      // Tagged with a `.code` (rather than a bare Error) so describeFirestoreError can tell this
+      // apart from a real Firestore rejection - a permission-denied or auth error comes back from
+      // the backend in well under a second, so if this fires instead, the client never heard back
+      // from Firestore at all within the timeout window, which is a materially different problem.
+      const err = new Error(`Timed out after ${ms}ms waiting for Firestore`);
+      (err as Error & { code: string }).code = "client-timeout";
+      reject(err);
+    }, ms);
     promise.then(
       (value) => { clearTimeout(timer); resolve(value); },
       (err) => { clearTimeout(timer); reject(err); }
@@ -45,7 +53,9 @@ export function withTimeout<T>(promise: Promise<T>, ms = 20000): Promise<T> {
 // surface it so a bug report actually says what's wrong instead of us having to guess blind.
 export function describeFirestoreError(e: unknown): string {
   const code = (e as { code?: unknown } | null)?.code;
-  return typeof code === "string" ? code : "unknown error";
+  if (typeof code === "string") return code;
+  const message = (e as { message?: unknown } | null)?.message;
+  return typeof message === "string" && message ? message : "unknown error";
 }
 
 // Firestore batches cap at 500 operations - chunk under that limit and commit each chunk as one
